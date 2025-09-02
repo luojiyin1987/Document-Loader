@@ -10,10 +10,12 @@ Document Loader - 支持从终端参数选择读取 txt、pdf、网址并打印�
 
 import argparse
 import sys
+import re
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
+from typing import List, Dict, Any, Optional
 
 try:
     import fitz  # PyMuPDF for PDF reading
@@ -21,6 +23,250 @@ except ImportError:
     print("错误: 需要安装 PyMuPDF 库")
     print("请运行: uv add pymupdf")
     sys.exit(1)
+
+
+class TextSplitter:
+    """文本分割器基类"""
+    
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        self.chunk_size = chunk_size
+        self.chunk_overlap = chunk_overlap
+    
+    def split_text(self, text: str) -> List[str]:
+        """分割文本，子类需要实现此方法"""
+        raise NotImplementedError("子类必须实现 split_text 方法")
+    
+    def create_documents(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+        """创建文档对象"""
+        chunks = self.split_text(text)
+        documents = []
+        
+        for i, chunk in enumerate(chunks):
+            doc_metadata = (metadata or {}).copy()
+            doc_metadata.update({
+                'chunk_index': i,
+                'chunk_size': len(chunk),
+                'splitter': self.__class__.__name__
+            })
+            documents.append({
+                'page_content': chunk,
+                'metadata': doc_metadata
+            })
+        
+        return documents
+
+
+class CharacterTextSplitter(TextSplitter):
+    """按字符数分割文本"""
+    
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200, separator: str = ''):
+        super().__init__(chunk_size, chunk_overlap)
+        self.separator = separator
+    
+    def split_text(self, text: str) -> List[str]:
+        """按字符数分割文本"""
+        if len(text) <= self.chunk_size:
+            return [text]
+        
+        chunks = []
+        start = 0
+        
+        while start < len(text):
+            end = start + self.chunk_size
+            chunk = text[start:end]
+            
+            # 如果不是最后一个chunk，尝试在分隔符处分割
+            if end < len(text) and self.separator:
+                last_separator = chunk.rfind(self.separator)
+                if last_separator != -1 and last_separator > self.chunk_size // 2:
+                    chunk = chunk[:last_separator + len(self.separator)]
+                    end = start + last_separator + len(self.separator)
+            
+            chunks.append(chunk)
+            start = end - self.chunk_overlap
+            
+            # 避免无限循环
+            if start >= len(text) - self.chunk_overlap:
+                break
+        
+        return chunks
+
+
+class RecursiveCharacterTextSplitter(TextSplitter):
+    """递归字符文本分割器 - 按段落、句子、词递归分割"""
+    
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        super().__init__(chunk_size, chunk_overlap)
+        self.separators = ["\n\n", "\n", "。", "！", "？", ".", "!", "?", " ", ""]
+    
+    def split_text(self, text: str) -> List[str]:
+        """递归分割文本"""
+        return self._recursive_split(text, self.separators)
+    
+    def _recursive_split(self, text: str, separators: List[str]) -> List[str]:
+        """递归分割方法"""
+        if len(text) <= self.chunk_size:
+            return [text]
+        
+        # 尝试使用当前分隔符列表中的分隔符
+        for separator in separators:
+            if separator in text:
+                parts = text.split(separator)
+                current_chunk = ""
+                chunks = []
+                
+                for part in parts:
+                    if len(current_chunk) + len(part) + len(separator) <= self.chunk_size:
+                        current_chunk += part + separator
+                    else:
+                        if current_chunk:
+                            chunks.append(current_chunk.rstrip(separator))
+                        
+                        # 如果当前部分太长，递归分割
+                        if len(part) > self.chunk_size:
+                            sub_chunks = self._recursive_split(part, separators[separators.index(separator) + 1:])
+                            chunks.extend(sub_chunks)
+                        else:
+                            current_chunk = part + separator
+                
+                if current_chunk:
+                    chunks.append(current_chunk.rstrip(separator))
+                
+                return chunks
+        
+        # 如果没有合适的分隔符，按字符分割
+        return self._split_by_characters(text)
+    
+    def _split_by_characters(self, text: str) -> List[str]:
+        """按字符分割"""
+        chunks = []
+        start = 0
+        
+        while start < len(text):
+            end = start + self.chunk_size
+            chunk = text[start:end]
+            chunks.append(chunk)
+            start = end - self.chunk_overlap
+            
+            if start >= len(text) - self.chunk_overlap:
+                break
+        
+        return chunks
+
+
+class TokenTextSplitter(TextSplitter):
+    """按token数分割文本（基于单词）"""
+    
+    def split_text(self, text: str) -> List[str]:
+        """按token数分割文本"""
+        # 简单的tokenization（按空格和标点分割）
+        tokens = re.findall(r'\w+|[^\w\s]', text)
+        
+        if len(tokens) <= self.chunk_size:
+            return [text]
+        
+        chunks = []
+        start = 0
+        
+        while start < len(tokens):
+            end = start + self.chunk_size
+            chunk_tokens = tokens[start:end]
+            
+            # 重建文本
+            chunk_text = ' '.join(chunk_tokens)
+            chunks.append(chunk_text)
+            
+            start = end - self.chunk_overlap
+            
+            if start >= len(tokens) - self.chunk_overlap:
+                break
+        
+        return chunks
+
+
+class SemanticTextSplitter(TextSplitter):
+    """语义文本分割器 - 基于句子边界和语义连贯性"""
+    
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        super().__init__(chunk_size, chunk_overlap)
+        # 中文句子结束符
+        self.chinese_sentence_endings = ['。', '！', '？', '；', '…']
+        # 英文句子结束符
+        self.english_sentence_endings = ['.', '!', '?', ';', '...']
+    
+    def split_text(self, text: str) -> List[str]:
+        """基于语义分割文本"""
+        if len(text) <= self.chunk_size:
+            return [text]
+        
+        sentences = self._split_into_sentences(text)
+        chunks = []
+        current_chunk = ""
+        
+        for sentence in sentences:
+            if len(current_chunk) + len(sentence) <= self.chunk_size:
+                current_chunk += sentence
+            else:
+                if current_chunk:
+                    chunks.append(current_chunk.strip())
+                
+                # 如果单个句子太长，按字符分割
+                if len(sentence) > self.chunk_size:
+                    char_chunks = self._split_long_sentence(sentence)
+                    chunks.extend(char_chunks)
+                    current_chunk = ""
+                else:
+                    current_chunk = sentence
+        
+        if current_chunk:
+            chunks.append(current_chunk.strip())
+        
+        return chunks
+    
+    def _split_into_sentences(self, text: str) -> List[str]:
+        """分割成句子"""
+        sentences = []
+        current = ""
+        
+        i = 0
+        while i < len(text):
+            char = text[i]
+            current += char
+            
+            # 检查是否是句子结束符
+            if (char in self.chinese_sentence_endings or 
+                char in self.english_sentence_endings):
+                
+                # 检查是否有引号
+                if i + 1 < len(text) and text[i + 1] in ['"', '"', ''', ''']:
+                    current += text[i + 1]
+                    i += 1
+                
+                sentences.append(current)
+                current = ""
+            
+            i += 1
+        
+        if current:
+            sentences.append(current)
+        
+        return sentences
+    
+    def _split_long_sentence(self, sentence: str) -> List[str]:
+        """分割长句子"""
+        chunks = []
+        start = 0
+        
+        while start < len(sentence):
+            end = start + self.chunk_size
+            chunk = sentence[start:end]
+            chunks.append(chunk)
+            start = end - self.chunk_overlap
+            
+            if start >= len(sentence) - self.chunk_overlap:
+                break
+        
+        return chunks
 
 
 def read_txt_file(file_path):
@@ -94,18 +340,24 @@ def is_url(string):
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Document Loader - 读取txt、pdf、网址内容',
+        description='Document Loader - 读取txt、pdf、网址内容并支持文本分割',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
     python main.py document.txt
     python main.py document.pdf  
     python main.py https://example.com
+    python main.py document.txt --split --chunk-size 500 --splitter recursive
         """
     )
     
     parser.add_argument('source', help='文件路径或URL')
     parser.add_argument('--encoding', default='utf-8', help='文本文件编码 (默认: utf-8)')
+    parser.add_argument('--split', action='store_true', help='启用文本分割')
+    parser.add_argument('--chunk-size', type=int, default=1000, help='分割块大小 (默认: 1000)')
+    parser.add_argument('--chunk-overlap', type=int, default=200, help='分割块重叠大小 (默认: 200)')
+    parser.add_argument('--splitter', choices=['character', 'recursive', 'token', 'semantic'], 
+                       default='recursive', help='分割器类型 (默认: recursive)')
     
     args = parser.parse_args()
     
@@ -137,10 +389,47 @@ def main():
             print("支持的文件类型: .txt, .pdf")
             sys.exit(1)
     
-    # 打印内容
-    print(content)
+    # 如果启用文本分割
+    if args.split:
+        print(f"正在使用 {args.splitter} 分割器分割文本...")
+        print(f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}")
+        print("=" * 50)
+        
+        # 创建分割器
+        if args.splitter == 'character':
+            splitter = CharacterTextSplitter(args.chunk_size, args.chunk_overlap)
+        elif args.splitter == 'recursive':
+            splitter = RecursiveCharacterTextSplitter(args.chunk_size, args.chunk_overlap)
+        elif args.splitter == 'token':
+            splitter = TokenTextSplitter(args.chunk_size, args.chunk_overlap)
+        elif args.splitter == 'semantic':
+            splitter = SemanticTextSplitter(args.chunk_size, args.chunk_overlap)
+        
+        # 创建文档对象
+        metadata = {
+            'source': source,
+            'total_length': len(content),
+            'chunk_size': args.chunk_size,
+            'chunk_overlap': args.chunk_overlap
+        }
+        
+        documents = splitter.create_documents(content, metadata)
+        
+        # 打印分割结果
+        print(f"总共分割为 {len(documents)} 个块:")
+        print("-" * 50)
+        
+        for i, doc in enumerate(documents):
+            print(f"块 {i + 1} (长度: {len(doc['page_content'])}):")
+            print(f"元数据: {doc['metadata']}")
+            print(f"内容: {doc['page_content'][:200]}{'...' if len(doc['page_content']) > 200 else ''}")
+            print("-" * 50)
+    else:
+        # 直接打印内容
+        print(content)
+    
     print("\n" + "=" * 50)
-    print("读取完成")
+    print("处理完成")
 
 
 if __name__ == "__main__":
