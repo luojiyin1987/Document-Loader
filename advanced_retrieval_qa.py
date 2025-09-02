@@ -184,6 +184,7 @@ class QueryAnalyzer:
     def _requires_reasoning(self, query_type: str, query: str) -> bool:
         """判断是否需要推理"""
         reasoning_types = ["reasoning", "comparative", "evaluative"]
+        # query参数保留用于未来扩展，当前仅基于query_type判断
         return query_type in reasoning_types
 
     def _infer_intent(self, query_type: str) -> str:
@@ -272,7 +273,7 @@ class MultiStrategyRetriever(BaseRetriever):
         """合并和重排序检索结果"""
 
         # 收集所有文档
-        all_docs = {}
+        all_docs: Dict[str, Dict[str, Any]] = {}
         for strategy, result in all_results:
             for doc in result.documents:
                 if doc.doc_id not in all_docs:
@@ -283,8 +284,8 @@ class MultiStrategyRetriever(BaseRetriever):
                 )
 
         # 重排序
-        reranked_docs = []
-        for doc_id, doc_info in all_docs.items():
+        reranked_docs: List[RetrievedDocument] = []
+        for doc_info in all_docs.values():
             doc = doc_info["doc"]
 
             # 计算重排序分数
@@ -412,6 +413,7 @@ class AdvancedContextBuilder(ContextBuilder):
         self, query: str, docs: List[RetrievedDocument]
     ) -> List[RetrievedDocument]:
         """相关优先策略"""
+        # query参数保留用于未来扩展，当前仅基于文档相关性选择
         return self._select_relevant_docs(docs)
 
     def _diverse_strategy(
