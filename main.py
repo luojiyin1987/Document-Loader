@@ -31,6 +31,13 @@ from embeddings import HybridSearch, SimpleEmbeddings, simple_text_search
 # 文本分割功能
 from text_splitter import create_text_splitter
 
+# 向量存储功能
+# from vector_store_integration import (
+#     add_chunks_to_vector_store,
+#     create_vector_store_integration,
+#     search_vector_store,
+# )
+
 
 def read_txt_file(file_path):
     """读取文本文件"""
