@@ -1,7 +1,0 @@
-This document contains mixed content.
-
-Paragraph 1: This is the first paragraph with multiple sentences. It should be handled properly by the text splitter.
-
-Paragraph 2: This is the second paragraph. It contains different content and should be split independently.
-
-Paragraph 3: The final paragraph contains conclusion text and summary information.

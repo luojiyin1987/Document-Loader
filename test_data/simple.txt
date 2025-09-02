@@ -1,4 +1,0 @@
-This is a simple test document.
-It contains multiple lines of text.
-Each line should be handled properly by the text splitter.
-The document is short but suitable for basic testing.

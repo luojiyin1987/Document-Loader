@@ -1,5 +1,0 @@
-Data science combines statistics, programming, and domain expertise to extract insights from data.
-Data cleaning and preprocessing are crucial steps in the data science workflow.
-Exploratory data analysis helps understand patterns and relationships in datasets.
-Statistical analysis and hypothesis testing validate findings and support decision-making.
-Data visualization communicates insights through charts, graphs, and interactive dashboards.

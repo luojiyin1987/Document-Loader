@@ -8,13 +8,11 @@ This is a Python project focused on document loading and processing using LangCh
 
 ## Project Structure
 
-Current project structure:
+Currently, this is a minimal project with:
 - `README.md` - Project documentation (in Chinese)
 - `LICENSE` - MIT License
-- `main.py` - Main application with document loading and text splitting
-- `CLAUDE.md` - This guidance file
-- `pyproject.toml` - Project configuration and dependencies
-- `uv.lock` - Locked dependencies
+- No Python source code files yet
+- No dependency management files present
 
 ## Development Setup
 
@@ -30,7 +28,6 @@ This project uses **uv** as the package manager. To set up the development envir
    uv add langchain
    uv add langchain-community  # For document loaders
    uv add langchain-core       # Core LangChain functionality
-   uv add pymupdf              # For PDF processing
    # Add other document processing dependencies as needed
    ```
 
@@ -41,14 +38,7 @@ This project uses **uv** as the package manager. To set up the development envir
 
 4. Run the project:
    ```bash
-   # Basic document reading
-   uv run python main.py document.txt
-   uv run python main.py document.pdf
-   uv run python main.py https://example.com
-   
-   # With text splitting
-   uv run python main.py document.txt --split --chunk-size 1000 --splitter recursive
-   uv run python main.py large_file.txt --split --splitter streaming
+   uv run python main.py  # or whatever the main file is named
    ```
 
 ### Common uv Commands
@@ -60,28 +50,13 @@ This project uses **uv** as the package manager. To set up the development envir
 - `uv lock` - Update lockfile
 - `uv tree` - Show dependency tree
 
-## Core Features
+## Intended Architecture
 
-### Document Loading
-- **Text Files**: Supports `.txt` files with multiple encoding options (UTF-8, GBK, Latin-1)
-- **PDF Files**: Full PDF text extraction using PyMuPDF with page-by-page processing
-- **Web Content**: URL content fetching with HTML tag stripping and encoding handling
-
-### Text Splitting
-Multiple text splitting strategies for different use cases:
-
-- **CharacterTextSplitter**: Simple character-based splitting with custom separators
-- **RecursiveCharacterTextSplitter**: Memory-efficient iterative splitting using paragraph/sentence/word boundaries
-- **StreamingTextSplitter**: Generator-based streaming splitter for very large files
-- **TokenTextSplitter**: Token-based splitting for English text
-- **SemanticTextSplitter**: Sentence boundary-aware splitting for semantic coherence
-
-### Command Line Interface
-Comprehensive CLI with flexible options:
-- Multiple input sources (files, URLs)
-- Configurable chunk sizes and overlap
-- Multiple splitting strategies
-- Encoding options for different file formats
+Based on the README description, this project will focus on:
+- Document loading capabilities using LangChain
+- File reading and processing
+- Document retrieval functionality
+- Support for various document formats
 
 ## Notes for Development
 
@@ -89,15 +64,6 @@ Comprehensive CLI with flexible options:
 - The README indicates the project is for educational purposes
 - Primary language appears to be Chinese based on the README
 - Uses **uv** as the package manager (modern Python package management)
-- Memory-efficient text splitting implementation avoids recursion issues
-- Supports both Chinese and English text processing
-- Designed for scalability with streaming capabilities for large files
+- No existing code patterns or conventions established yet
+- Will need to establish proper Python project structure as development progresses
 - uv automatically manages virtual environments in `.venv/` directory
-
-## Key Design Decisions
-
-- **Memory Safety**: Iterative text splitters prevent stack overflow with large documents
-- **Flexibility**: Multiple splitting strategies for different use cases
-- **Performance**: Streaming capabilities for handling very large files
-- **Internationalization**: Full Unicode support with multiple encoding options
-- **Extensibility**: Clean class hierarchy for adding new splitter types

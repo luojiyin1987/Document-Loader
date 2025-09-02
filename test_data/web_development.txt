@@ -1,5 +1,0 @@
-Frontend development involves creating user interfaces with HTML, CSS, and JavaScript.
-Backend development handles server-side logic, databases, and API integrations.
-Full-stack developers work on both frontend and backend components.
-Modern web frameworks include React, Vue.js, and Angular for frontend development.
-Backend technologies include Node.js, Django, Ruby on Rails, and ASP.NET.

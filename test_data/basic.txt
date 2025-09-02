@@ -1,1 +1,0 @@
-This is a basic test document. It contains multiple sentences for testing text splitting functionality. The document should be split into manageable chunks.
