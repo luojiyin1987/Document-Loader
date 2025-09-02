@@ -12,7 +12,7 @@
 
 import re
 import math
-from typing import List, Dict, Any, Tuple, Optional
+from typing import List, Dict, Any, Union
 from collections import Counter
 
 
@@ -25,9 +25,9 @@ class SimpleEmbeddings:
     def __init__(self, min_word_length: int = 2, max_features: int = 10000):
         self.min_word_length = min_word_length
         self.max_features = max_features
-        self.vocabulary = {}
-        self.idf_values = {}
-        self.fitted = False
+        self.vocabulary: Dict[str, int] = {}
+        self.idf_values: Dict[str, float] = {}
+        self.fitted: bool = False
     
     def _tokenize(self, text: str) -> List[str]:
         """简单的分词和预处理"""
@@ -56,7 +56,7 @@ class SimpleEmbeddings:
     def fit(self, documents: List[str]):
         """构建词汇表和IDF值"""
         # 收集所有文档的词频
-        doc_freq = Counter()
+        doc_freq: Counter[str] = Counter()
         total_docs = len(documents)
         
         for doc in documents:
@@ -120,7 +120,7 @@ class SimpleEmbeddings:
         doc_vecs = [self.embed_text(doc) for doc in documents]
         
         # 计算相似度
-        similarities = []
+        similarities: List[Dict[str, Any]] = []
         for i, doc_vec in enumerate(doc_vecs):
             sim = self.similarity(query_vec, doc_vec)
             similarities.append({
@@ -130,7 +130,7 @@ class SimpleEmbeddings:
             })
         
         # 按相似度排序
-        similarities.sort(key=lambda x: x['similarity'], reverse=True)
+        similarities.sort(key=lambda x: float(x['similarity']), reverse=True)
         
         return similarities[:top_k]
 
@@ -167,7 +167,7 @@ class HybridSearch:
         # 训练嵌入模型
         self.embedder.fit(documents)
         
-        results = []
+        results: List[Dict[str, Union[int, str, float]]] = []
         for i, doc in enumerate(documents):
             # 计算关键词分数
             keyword_score = self.keyword_score(query, doc)
@@ -178,7 +178,7 @@ class HybridSearch:
                 query_vec = self.embedder.embed_text(query)
                 doc_vec = self.embedder.embed_text(doc)
                 semantic_score = self.embedder.similarity(query_vec, doc_vec)
-            except:
+            except Exception:
                 pass
             
             # 加权组合分数
@@ -196,7 +196,7 @@ class HybridSearch:
             })
         
         # 按综合分数排序
-        results.sort(key=lambda x: x['combined_score'], reverse=True)
+        results.sort(key=lambda x: float(x['combined_score']), reverse=True)
         
         return results[:top_k]
 
@@ -207,7 +207,7 @@ def simple_text_search(query: str, documents: List[str], top_k: int = 5) -> List
     不需要训练，适合快速搜索
     """
     query_lower = query.lower()
-    results = []
+    results: List[Dict[str, Union[int, str, float]]] = []
     
     for i, doc in enumerate(documents):
         doc_lower = doc.lower()
@@ -227,8 +227,8 @@ def simple_text_search(query: str, documents: List[str], top_k: int = 5) -> List
                 'score': score
             })
     
-    # 按分数排序
-    results.sort(key=lambda x: x['score'], reverse=True)
+            # 按分数排序
+        results.sort(key=lambda x: float(x['score']), reverse=True)
     
     return results[:top_k]
 
