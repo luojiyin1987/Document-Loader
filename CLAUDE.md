@@ -8,7 +8,7 @@ This is a Python project focused on document loading and processing with custom 
 
 ## Project Structure
 
-```
+```text
 Document-Loader/
 ├── main.py                 # Main application entry point
 ├── text_splitter.py        # Text splitting module with various strategies
@@ -22,12 +22,14 @@ Document-Loader/
 ### Core Modules
 
 #### `main.py` - Application Entry Point
+
 - Command-line interface using argparse
 - Document loading from TXT, PDF, and URL sources
 - Text splitting and search functionality
 - Import organization with clear separation of standard libraries, third-party packages, and custom modules
 
 #### `text_splitter.py` - Text Processing Module
+
 - **TextSplitter**: Base class for all text splitters
 - **CharacterTextSplitter**: Character-based splitting with separator support
 - **RecursiveCharacterTextSplitter**: Iterative splitting using multiple separators
@@ -37,13 +39,14 @@ Document-Loader/
 - **create_text_splitter()**: Factory function for splitter creation
 
 #### `embeddings.py` - Search and Embedding Module
+
 - **SimpleEmbeddings**: Vector embedding generation and semantic search
 - **HybridSearch**: Combined keyword and semantic search
 - **simple_text_search()**: Basic keyword-based search functionality
 
 ## Development Setup
 
-This project uses **uv** as the package manager. To set up the development environment:
+This project uses **uv** as the package manager and **pre-commit** for code quality assurance. To set up the development environment:
 
 1. Initialize the project with uv (if not already done):
 
@@ -56,7 +59,7 @@ This project uses **uv** as the package manager. To set up the development envir
    ```bash
    # For PDF processing
    uv add pymupdf
-   
+
    # For embeddings and search (if needed)
    uv add numpy
    uv add scikit-learn
@@ -69,7 +72,17 @@ This project uses **uv** as the package manager. To set up the development envir
    source .venv/bin/activate  # uv automatically creates and manages this
    ```
 
-4. Run the project:
+4. Install and set up pre-commit:
+
+   ```bash
+   # Install pre-commit
+   uv add pre-commit
+
+   # Install git hooks
+   pre-commit install
+   ```
+
+5. Run the project:
 
    ```bash
    uv run python main.py document.txt
@@ -83,6 +96,13 @@ This project uses **uv** as the package manager. To set up the development envir
 - `uv run <command>` - Run a command in the virtual environment
 - `uv lock` - Update lockfile
 - `uv tree` - Show dependency tree
+
+### Pre-commit Commands
+
+- `pre-commit run` - Run checks on staged files
+- `pre-commit run --all-files` - Run checks on all files
+- `pre-commit autoupdate` - Update hook versions
+- `pre-commit install` - Install git hooks
 
 ## Usage Examples
 
@@ -158,6 +178,16 @@ from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
 - Follow Python naming conventions (snake_case for functions, CamelCase for classes)
 - Type hints should be used for better code maintainability
 
+### Pre-commit Integration
+
+All code changes must pass pre-commit checks before committing. The configured hooks ensure:
+
+- Code formatting consistency (black, isort)
+- Code quality standards (flake8, mypy)
+- Security best practices (bandit, safety)
+- Documentation completeness (interrogate)
+- File formatting standards (YAML, Markdown)
+
 ## Development Notes
 
 - This is a learning project focused on document processing and text analysis
@@ -166,3 +196,5 @@ from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
 - Modular architecture allows for easy extension of new text splitting strategies
 - Custom implementation rather than LangChain dependencies for better control and learning
 - Code is structured to be educational while maintaining production-quality standards
+- Pre-commit hooks ensure consistent code quality and formatting across the project
+- See `PRECOMMIT.md` for detailed pre-commit configuration and usage instructions

@@ -12,9 +12,9 @@ Document Loader - 支持从终端参数选择读取 txt、pdf、网址并打印�
 import argparse
 import sys
 from pathlib import Path
+from urllib.error import URLError
 from urllib.parse import urlparse
 from urllib.request import urlopen
-from urllib.error import URLError
 
 # ===== 第三方库导入 =====
 try:
@@ -26,7 +26,7 @@ except ImportError:
 
 # ===== 项目自定义模块导入 =====
 # 向量嵌入和搜索功能
-from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
+from embeddings import HybridSearch, SimpleEmbeddings, simple_text_search
 
 # 文本分割功能
 from text_splitter import create_text_splitter
@@ -72,7 +72,12 @@ def read_pdf_file(file_path):
 def read_url(url):
     """读取网页内容"""
     try:
-        with urlopen(url, timeout=10) as response:
+        # 验证URL scheme
+        parsed_url = urlparse(url)
+        if parsed_url.scheme not in ["http", "https"]:
+            raise ValueError(f"不支持的URL scheme: {parsed_url.scheme}")
+
+        with urlopen(url, timeout=10) as response:  # nosec B310 - URL scheme validated above
             content_type = response.headers.get("content-type", "")
 
             if "text/html" in content_type.lower():
@@ -110,33 +115,27 @@ def main():
 使用示例:
     # 基本文档读取
     python main.py document.txt
-    python main.py document.pdf  
+    python main.py document.pdf
     python main.py https://example.com
-    
+
     # 文本分割
     python main.py document.txt --split --chunk-size 500 --splitter recursive
-    
+
     # 搜索功能
     python main.py document.txt --search-mode keyword --search-query "Python 编程"
     python main.py document.txt --search-mode semantic --search-query "人工智能"
     python main.py document.txt --search-mode hybrid --search-query "数据 算法"
-    
+
     # 分割+搜索组合
     python main.py large_file.txt --split --search-mode semantic --search-query "机器学习"
         """,
     )
 
     parser.add_argument("source", help="文件路径或URL")
-    parser.add_argument(
-        "--encoding", default="utf-8", help="文本文件编码 (默认: utf-8)"
-    )
+    parser.add_argument("--encoding", default="utf-8", help="文本文件编码 (默认: utf-8)")
     parser.add_argument("--split", action="store_true", help="启用文本分割")
-    parser.add_argument(
-        "--chunk-size", type=int, default=1000, help="分割块大小 (默认: 1000)"
-    )
-    parser.add_argument(
-        "--chunk-overlap", type=int, default=200, help="分割块重叠大小 (默认: 200)"
-    )
+    parser.add_argument("--chunk-size", type=int, default=1000, help="分割块大小 (默认: 1000)")
+    parser.add_argument("--chunk-overlap", type=int, default=200, help="分割块重叠大小 (默认: 200)")
     parser.add_argument(
         "--splitter",
         choices=["character", "recursive", "streaming", "token", "semantic"],
@@ -196,9 +195,7 @@ def main():
             print(f"正在使用 {args.splitter} 分割器预处理文本...")
 
             # 创建分割器
-            splitter = create_text_splitter(
-                args.splitter, args.chunk_size, args.chunk_overlap
-            )
+            splitter = create_text_splitter(args.splitter, args.chunk_size, args.chunk_overlap)
 
             # 分割文档
             documents = splitter.create_documents(
@@ -221,9 +218,7 @@ def main():
         # 执行搜索
         try:
             if args.search_mode == "keyword":
-                results = simple_text_search(
-                    args.search_query, search_documents, args.top_k
-                )
+                results = simple_text_search(args.search_query, search_documents, args.top_k)
             elif args.search_mode == "semantic":
                 embedder = SimpleEmbeddings()
                 results = embedder.similarity_search(
@@ -231,9 +226,7 @@ def main():
                 )
             elif args.search_mode == "hybrid":
                 hybrid_search = HybridSearch()
-                results = hybrid_search.search(
-                    args.search_query, search_documents, args.top_k
-                )
+                results = hybrid_search.search(args.search_query, search_documents, args.top_k)
 
             # 显示搜索结果
             print(f"\n找到 {len(results)} 个相关结果:")
@@ -242,50 +235,48 @@ def main():
             for i, result in enumerate(results, 1):
                 if args.search_mode == "keyword":
                     print(f"结果 {i}: 分数={result['score']:.3f}")
-                    print(
-                        f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}"
-                    )
+                    content_preview = result["document"][:300]
+                    if len(result["document"]) > 300:
+                        content_preview += "..."
+                    print(f"内容: {content_preview}")
                 elif args.search_mode == "semantic":
                     print(f"结果 {i}: 相似度={result['similarity']:.3f}")
-                    print(
-                        f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}"
-                    )
+                    content_preview = result["document"][:300]
+                    if len(result["document"]) > 300:
+                        content_preview += "..."
+                    print(f"内容: {content_preview}")
                 elif args.search_mode == "hybrid":
                     print(
                         f"结果 {i}: 综合分数={result['combined_score']:.3f} "
                         f"(关键词={result['keyword_score']:.3f}, 语义={result['semantic_score']:.3f})"
                     )
-                    print(
-                        f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}"
-                    )
+                    content_preview = result["document"][:300]
+                    if len(result["document"]) > 300:
+                        content_preview += "..."
+                    print(f"内容: {content_preview}")
                 print()
 
         except Exception as e:
             print(f"搜索时出错: {e}")
             # 降级到关键词搜索
             print("降级到关键词搜索...")
-            results = simple_text_search(
-                args.search_query, search_documents, args.top_k
-            )
+            results = simple_text_search(args.search_query, search_documents, args.top_k)
             for i, result in enumerate(results, 1):
                 print(f"结果 {i}: 分数={result['score']:.3f}")
-                print(
-                    f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}"
-                )
+                content_preview = result["document"][:300]
+                if len(result["document"]) > 300:
+                    content_preview += "..."
+                print(f"内容: {content_preview}")
                 print()
 
     # 如果启用文本分割但不搜索
     elif args.split:
         print(f"正在使用 {args.splitter} 分割器分割文本...")
-        print(
-            f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}"
-        )
+        print(f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}")
         print("=" * 50)
 
         # 创建分割器
-        splitter = create_text_splitter(
-            args.splitter, args.chunk_size, args.chunk_overlap
-        )
+        splitter = create_text_splitter(args.splitter, args.chunk_size, args.chunk_overlap)
 
         # 创建文档对象
         metadata = {
@@ -304,9 +295,10 @@ def main():
         for i, doc in enumerate(documents):
             print(f"块 {i + 1} (长度: {len(doc['page_content'])}):")
             print(f"元数据: {doc['metadata']}")
-            print(
-                f"内容: {doc['page_content'][:200]}{'...' if len(doc['page_content']) > 200 else ''}"
-            )
+            content_preview = doc["page_content"][:200]
+            if len(doc["page_content"]) > 200:
+                content_preview += "..."
+            print(f"内容: {content_preview}")
             print("-" * 50)
     else:
         # 直接打印内容
