@@ -1,0 +1,7 @@
+This is a medium-length test document that contains more content for testing purposes. 
+
+The document includes multiple paragraphs with different themes and topics. Each paragraph should be processed independently by the text splitting algorithms.
+
+Some paragraphs are longer than others, which helps test the chunk size limits and overlap functionality. The text splitter should be able to handle these variations gracefully.
+
+The final paragraph contains conclusion text and summary information that should be preserved in the splitting process.

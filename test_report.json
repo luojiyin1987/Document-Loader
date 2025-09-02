@@ -1,0 +1,53 @@
+{
+  "summary": {
+    "total_tests": 7,
+    "passed": 6,
+    "failed": 1,
+    "success_rate": 85.71428571428571
+  },
+  "test_results": [
+    {
+      "name": "Text Splitters",
+      "status": "PASS",
+      "time": 0.0014798641204833984,
+      "error": null
+    },
+    {
+      "name": "Search Strategies",
+      "status": "PASS",
+      "time": 0.0026903152465820312,
+      "error": null
+    },
+    {
+      "name": "Document Loading",
+      "status": "PASS",
+      "time": 0.00011110305786132812,
+      "error": null
+    },
+    {
+      "name": "Memory Efficiency",
+      "status": "PASS",
+      "time": 0.7298460006713867,
+      "error": null
+    },
+    {
+      "name": "Error Handling",
+      "status": "FAIL",
+      "time": 0.00011730194091796875,
+      "error": "Empty text should produce no chunks"
+    },
+    {
+      "name": "Multilingual Support",
+      "status": "PASS",
+      "time": 0.00020623207092285156,
+      "error": null
+    },
+    {
+      "name": "Performance Tests",
+      "status": "PASS",
+      "time": 1.318554401397705,
+      "error": null
+    }
+  ],
+  "timestamp": 1756802331.176816
+}

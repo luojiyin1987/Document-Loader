@@ -1,0 +1,14 @@
+Name: John Doe
+Age: 30
+City: New York
+Occupation: Software Engineer
+
+Name: Jane Smith
+Age: 25
+City: San Francisco
+Occupation: Data Scientist
+
+Name: Bob Johnson
+Age: 35
+City: Chicago
+Occupation: Product Manager

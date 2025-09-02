@@ -1,0 +1,17 @@
+第一段：这是一个测试段落，用于验证迭代分割器的功能。迭代分割器通过循环而不是递归来处理文本，这样可以避免递归深度过大导致的内存问题。
+
+第二段：在处理大型文档时，递归方法可能会因为递归深度限制而失败。迭代方法通过while循环逐步处理文本，每次只处理一个chunk，大大减少了内存使用。
+
+第三段：流式分割器更进一步，它使用生成器模式，可以逐个产生分割块而不需要一次性将所有块存储在内存中。这对于处理超大文件特别有用。
+
+第四段：这种方法的优势在于：
+1. 内存使用恒定，不会随文本大小增长
+2. 可以处理任意大小的文件
+3. 没有递归深度限制
+4. 可以随时停止处理
+
+第五段：在实际应用中，流式处理特别适合处理大型文档、日志文件、数据库导出等大文本内容。它可以在有限的内存条件下处理GB级别的文本。
+
+第六段：This paragraph is in English to test mixed language processing. The iterative splitter should handle both Chinese and English text seamlessly, maintaining proper sentence boundaries and semantic coherence across chunks.
+
+第七段：总结来说，迭代式和流式文本分割器解决了递归方法的内存问题，为处理大型文本提供了可靠的解决方案。这对于构建可扩展的文档处理系统非常重要。

@@ -1,0 +1,5 @@
+Machine learning is a subset of artificial intelligence that enables systems to learn from data.
+Supervised learning uses labeled data to train models for classification and regression tasks.
+Unsupervised learning finds patterns in unlabeled data through clustering and dimensionality reduction.
+Reinforcement learning trains agents to make decisions through reward-based learning.
+Deep learning uses neural networks with multiple layers to extract hierarchical features.

@@ -1,0 +1,5 @@
+Cybersecurity protects digital systems and data from unauthorized access and attacks.
+Network security monitors and protects network infrastructure from threats.
+Application security focuses on securing software applications throughout their lifecycle.
+Information security protects sensitive data from unauthorized access and disclosure.
+Security awareness training helps employees recognize and respond to security threats.
