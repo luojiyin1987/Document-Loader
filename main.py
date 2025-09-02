@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
 from typing import List, Dict, Any, Optional
+from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
 
 try:
     import fitz  # PyMuPDF for PDF reading
@@ -440,10 +441,21 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
+    # 基本文档读取
     python main.py document.txt
     python main.py document.pdf  
     python main.py https://example.com
+    
+    # 文本分割
     python main.py document.txt --split --chunk-size 500 --splitter recursive
+    
+    # 搜索功能
+    python main.py document.txt --search-mode keyword --search-query "Python 编程"
+    python main.py document.txt --search-mode semantic --search-query "人工智能"
+    python main.py document.txt --search-mode hybrid --search-query "数据 算法"
+    
+    # 分割+搜索组合
+    python main.py large_file.txt --split --search-mode semantic --search-query "机器学习"
         """
     )
     
@@ -454,6 +466,10 @@ def main():
     parser.add_argument('--chunk-overlap', type=int, default=200, help='分割块重叠大小 (默认: 200)')
     parser.add_argument('--splitter', choices=['character', 'recursive', 'streaming', 'token', 'semantic'], 
                        default='recursive', help='分割器类型 (默认: recursive)')
+    parser.add_argument('--search-mode', choices=['keyword', 'semantic', 'hybrid'], 
+                       help='搜索模式: keyword(关键词), semantic(语义), hybrid(混合)')
+    parser.add_argument('--search-query', help='搜索查询内容')
+    parser.add_argument('--top-k', type=int, default=5, help='搜索结果数量 (默认: 5)')
     
     args = parser.parse_args()
     
@@ -485,8 +501,87 @@ def main():
             print("支持的文件类型: .txt, .pdf")
             sys.exit(1)
     
-    # 如果启用文本分割
-    if args.split:
+    # 如果启用搜索功能
+    if args.search_mode and args.search_query:
+        print(f"正在使用 {args.search_mode} 搜索模式...")
+        print(f"搜索查询: {args.search_query}")
+        print(f"返回结果数量: {args.top_k}")
+        print("=" * 50)
+        
+        # 准备搜索文档（如果同时启用了分割）
+        search_documents = []
+        
+        if args.split:
+            # 先分割文本，然后在分割后的块中搜索
+            print(f"正在使用 {args.splitter} 分割器预处理文本...")
+            
+            # 创建分割器
+            if args.splitter == 'character':
+                splitter = CharacterTextSplitter(args.chunk_size, args.chunk_overlap)
+            elif args.splitter == 'recursive':
+                splitter = RecursiveCharacterTextSplitter(args.chunk_size, args.chunk_overlap)
+            elif args.splitter == 'streaming':
+                splitter = StreamingTextSplitter(args.chunk_size, args.chunk_overlap)
+            elif args.splitter == 'token':
+                splitter = TokenTextSplitter(args.chunk_size, args.chunk_overlap)
+            elif args.splitter == 'semantic':
+                splitter = SemanticTextSplitter(args.chunk_size, args.chunk_overlap)
+            
+            # 分割文档
+            documents = splitter.create_documents(content, {
+                'source': source,
+                'total_length': len(content),
+                'chunk_size': args.chunk_size,
+                'chunk_overlap': args.chunk_overlap
+            })
+            
+            search_documents = [doc['page_content'] for doc in documents]
+            print(f"文本已分割为 {len(search_documents)} 个块进行搜索")
+        else:
+            # 直接在整个文档中搜索
+            search_documents = [content]
+            print("在整个文档中进行搜索")
+        
+        # 执行搜索
+        try:
+            if args.search_mode == 'keyword':
+                results = simple_text_search(args.search_query, search_documents, args.top_k)
+            elif args.search_mode == 'semantic':
+                embedder = SimpleEmbeddings()
+                results = embedder.similarity_search(args.search_query, search_documents, args.top_k)
+            elif args.search_mode == 'hybrid':
+                hybrid_search = HybridSearch()
+                results = hybrid_search.search(args.search_query, search_documents, args.top_k)
+            
+            # 显示搜索结果
+            print(f"\n找到 {len(results)} 个相关结果:")
+            print("-" * 50)
+            
+            for i, result in enumerate(results, 1):
+                if args.search_mode == 'keyword':
+                    print(f"结果 {i}: 分数={result['score']:.3f}")
+                    print(f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}")
+                elif args.search_mode == 'semantic':
+                    print(f"结果 {i}: 相似度={result['similarity']:.3f}")
+                    print(f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}")
+                elif args.search_mode == 'hybrid':
+                    print(f"结果 {i}: 综合分数={result['combined_score']:.3f} "
+                          f"(关键词={result['keyword_score']:.3f}, 语义={result['semantic_score']:.3f})")
+                    print(f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}")
+                print()
+        
+        except Exception as e:
+            print(f"搜索时出错: {e}")
+            # 降级到关键词搜索
+            print("降级到关键词搜索...")
+            results = simple_text_search(args.search_query, search_documents, args.top_k)
+            for i, result in enumerate(results, 1):
+                print(f"结果 {i}: 分数={result['score']:.3f}")
+                print(f"内容: {result['document'][:300]}{'...' if len(result['document']) > 300 else ''}")
+                print()
+    
+    # 如果启用文本分割但不搜索
+    elif args.split:
         print(f"正在使用 {args.splitter} 分割器分割文本...")
         print(f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}")
         print("=" * 50)
