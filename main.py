@@ -8,21 +8,28 @@ Document Loader - 支持从终端参数选择读取 txt、pdf、网址并打印�
     python main.py https://example.com
 """
 
+# ===== 标准库导入 =====
 import argparse
 import sys
 from pathlib import Path
 from urllib.parse import urlparse
 from urllib.request import urlopen
 from urllib.error import URLError
-from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
-from text_splitter import create_text_splitter
 
+# ===== 第三方库导入 =====
 try:
     import fitz  # PyMuPDF for PDF reading
 except ImportError:
     print("错误: 需要安装 PyMuPDF 库")
     print("请运行: uv add pymupdf")
     sys.exit(1)
+
+# ===== 项目自定义模块导入 =====
+# 向量嵌入和搜索功能
+from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
+
+# 文本分割功能
+from text_splitter import create_text_splitter
 
 
 
