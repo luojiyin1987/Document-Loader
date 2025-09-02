@@ -3,6 +3,7 @@
 ## 安全问题修复
 
 ### 原问题
+
 - **CWE-502**: 不安全的反序列化 (Insecure Deserialization)
 - **风险等级**: Medium
 - **位置**: `vector_store.py:244` 中的 `pickle.load()` 调用
@@ -10,6 +11,7 @@
 ### 修复方案
 
 #### 1. 添加安全的JSON序列化方法
+
 ```python
 def save_json(self, file_path: str) -> None:
     """保存到JSON文件（更安全的方式）"""
@@ -42,21 +44,25 @@ def load_json(self, file_path: str) -> None:
 ```
 
 #### 2. 更新集成模块使用安全方法
+
 - 优先使用JSON格式进行序列化
 - 保持向后兼容性，但添加警告信息
 - 自动将 `.pkl` 文件名转换为 `.json` 文件名
 
 #### 3. 完全移除不安全的pickle.load()方法
+
 彻底移除了 `pickle.load()` 方法，用 `NotImplementedError` 异常替代，并提供清晰的迁移指导。
 
 ### 安全改进效果
 
 #### ✅ 修复的问题
+
 - 完全消除了不安全的反序列化风险
 - 提供了安全的替代方案
 - 移除了所有pickle相关的安全漏洞
 
 #### 🔒 新增的安全特性
+
 - JSON序列化：安全的文本格式，易于审计
 - 错误处理：完善的异常处理机制
 - 迁移指导：清晰的旧格式转换指南
