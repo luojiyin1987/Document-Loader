@@ -93,62 +93,158 @@ class CharacterTextSplitter(TextSplitter):
 
 
 class RecursiveCharacterTextSplitter(TextSplitter):
-    """递归字符文本分割器 - 按段落、句子、词递归分割"""
+    """迭代字符文本分割器 - 按段落、句子、词迭代分割，避免递归内存问题"""
     
     def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
         super().__init__(chunk_size, chunk_overlap)
         self.separators = ["\n\n", "\n", "。", "！", "？", ".", "!", "?", " ", ""]
     
     def split_text(self, text: str) -> List[str]:
-        """递归分割文本"""
-        return self._recursive_split(text, self.separators)
+        """迭代分割文本，避免递归内存问题"""
+        return list(self._iterative_split(text))
     
-    def _recursive_split(self, text: str, separators: List[str]) -> List[str]:
-        """递归分割方法"""
+    def _iterative_split(self, text: str) -> List[str]:
+        """迭代分割方法"""
         if len(text) <= self.chunk_size:
             return [text]
         
-        # 尝试使用当前分隔符列表中的分隔符
-        for separator in separators:
-            if separator in text:
-                parts = text.split(separator)
-                current_chunk = ""
-                chunks = []
+        chunks = []
+        remaining_text = text
+        
+        while remaining_text:
+            chunk = self._extract_next_chunk(remaining_text)
+            chunks.append(chunk)
+            
+            # 计算剩余文本，考虑重叠
+            chunk_end = len(chunk) - self.chunk_overlap
+            if chunk_end <= 0:
+                chunk_end = len(chunk)
+            
+            remaining_text = remaining_text[chunk_end:]
+            
+            # 防止无限循环
+            if not remaining_text or len(remaining_text) < 10:
+                break
+        
+        return chunks
+    
+    def _extract_next_chunk(self, text: str) -> str:
+        """提取下一个chunk"""
+        if len(text) <= self.chunk_size:
+            return text
+        
+        # 尝试在各种分隔符处分割
+        for separator in self.separators:
+            if not separator:
+                continue
                 
-                for part in parts:
-                    if len(current_chunk) + len(part) + len(separator) <= self.chunk_size:
-                        current_chunk += part + separator
-                    else:
-                        if current_chunk:
-                            chunks.append(current_chunk.rstrip(separator))
-                        
-                        # 如果当前部分太长，递归分割
-                        if len(part) > self.chunk_size:
-                            sub_chunks = self._recursive_split(part, separators[separators.index(separator) + 1:])
-                            chunks.extend(sub_chunks)
-                        else:
-                            current_chunk = part + separator
-                
-                if current_chunk:
-                    chunks.append(current_chunk.rstrip(separator))
-                
-                return chunks
+            # 在chunk_size范围内寻找最后一个分隔符
+            search_area = text[:self.chunk_size]
+            last_separator_pos = -1
+            
+            # 从后向前查找分隔符
+            pos = len(search_area) - 1
+            while pos >= 0:
+                if search_area.startswith(separator, pos):
+                    last_separator_pos = pos
+                    break
+                pos -= 1
+            
+            # 如果找到合适的分隔符
+            if last_separator_pos != -1 and last_separator_pos > self.chunk_size // 4:
+                return text[:last_separator_pos + len(separator)]
         
         # 如果没有合适的分隔符，按字符分割
-        return self._split_by_characters(text)
+        return text[:self.chunk_size]
+
+
+class StreamingTextSplitter(TextSplitter):
+    """流式文本分割器 - 适用于超大文件的内存友好分割"""
     
-    def _split_by_characters(self, text: str) -> List[str]:
-        """按字符分割"""
+    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200):
+        super().__init__(chunk_size, chunk_overlap)
+        self.separators = ["\n\n", "\n", "。", "！", "？", ".", "!", "?", " ", ""]
+    
+    def split_text(self, text: str) -> List[str]:
+        """流式分割文本"""
+        return list(self._streaming_split_generator(text))
+    
+    def _streaming_split_generator(self, text: str):
+        """流式分割生成器"""
+        if len(text) <= self.chunk_size:
+            yield text
+            return
+        
+        position = 0
+        buffer = ""
+        
+        while position < len(text):
+            # 读取下一个段落或句子
+            next_segment = self._read_next_segment(text, position)
+            
+            if not next_segment:
+                break
+            
+            # 如果添加下一个segment不会超过chunk_size，就添加到buffer
+            if len(buffer) + len(next_segment) <= self.chunk_size:
+                buffer += next_segment
+                position += len(next_segment)
+            else:
+                # 如果buffer不为空，先输出buffer
+                if buffer:
+                    yield buffer
+                    # 重置buffer，考虑重叠
+                    overlap_start = max(0, len(buffer) - self.chunk_overlap)
+                    buffer = buffer[overlap_start:]
+                
+                # 检查新的segment是否太大
+                if len(next_segment) > self.chunk_size:
+                    # 大segment需要进一步分割
+                    for chunk in self._split_large_segment(next_segment):
+                        yield chunk
+                else:
+                    buffer = next_segment
+                    position += len(next_segment)
+        
+        # 输出最后的buffer
+        if buffer:
+            yield buffer
+    
+    def _read_next_segment(self, text: str, position: int) -> str:
+        """从指定位置读取下一个段落或句子"""
+        if position >= len(text):
+            return ""
+        
+        # 尝试按段落分割
+        for separator in ["\n\n", "\n"]:
+            if separator in text[position:]:
+                next_pos = text.find(separator, position)
+                if next_pos != -1:
+                    return text[position:next_pos + len(separator)]
+        
+        # 尝试按句子分割
+        for separator in ["。", "！", "？", ".", "!", "?"]:
+            if separator in text[position:]:
+                next_pos = text.find(separator, position)
+                if next_pos != -1:
+                    return text[position:next_pos + len(separator)]
+        
+        # 如果没有找到分隔符，返回剩余部分（不超过chunk_size）
+        remaining = text[position:]
+        return remaining[:self.chunk_size]
+    
+    def _split_large_segment(self, segment: str) -> List[str]:
+        """分割过大的segment"""
         chunks = []
         start = 0
         
-        while start < len(text):
+        while start < len(segment):
             end = start + self.chunk_size
-            chunk = text[start:end]
+            chunk = segment[start:end]
             chunks.append(chunk)
             start = end - self.chunk_overlap
             
-            if start >= len(text) - self.chunk_overlap:
+            if start >= len(segment) - self.chunk_overlap:
                 break
         
         return chunks
@@ -356,7 +452,7 @@ def main():
     parser.add_argument('--split', action='store_true', help='启用文本分割')
     parser.add_argument('--chunk-size', type=int, default=1000, help='分割块大小 (默认: 1000)')
     parser.add_argument('--chunk-overlap', type=int, default=200, help='分割块重叠大小 (默认: 200)')
-    parser.add_argument('--splitter', choices=['character', 'recursive', 'token', 'semantic'], 
+    parser.add_argument('--splitter', choices=['character', 'recursive', 'streaming', 'token', 'semantic'], 
                        default='recursive', help='分割器类型 (默认: recursive)')
     
     args = parser.parse_args()
@@ -400,6 +496,8 @@ def main():
             splitter = CharacterTextSplitter(args.chunk_size, args.chunk_overlap)
         elif args.splitter == 'recursive':
             splitter = RecursiveCharacterTextSplitter(args.chunk_size, args.chunk_overlap)
+        elif args.splitter == 'streaming':
+            splitter = StreamingTextSplitter(args.chunk_size, args.chunk_overlap)
         elif args.splitter == 'token':
             splitter = TokenTextSplitter(args.chunk_size, args.chunk_overlap)
         elif args.splitter == 'semantic':
