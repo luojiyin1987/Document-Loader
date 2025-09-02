@@ -18,7 +18,7 @@ try:
     import numpy as np
 except ImportError:
     print("警告: 未找到 numpy，将使用纯 Python 实现")
-    np = None
+    np = None  # type: ignore
 
 
 class VectorStore(ABC):
@@ -61,7 +61,7 @@ class InMemoryVectorStore(VectorStore):
         self.documents: List[Dict[str, Any]] = []
         self.embeddings: List[List[float]] = []
         self.doc_id_to_index: Dict[str, int] = {}
-        self.metadata_index: Dict[str, List[int]] = {}
+        self.metadata_index: Dict[str, List[Dict[str, Any]]] = {}
         self.created_at = datetime.now()
 
     def add_documents(self, documents: List[Dict[str, Any]], embeddings: List[List[float]]) -> None:
@@ -113,7 +113,7 @@ class InMemoryVectorStore(VectorStore):
             return []
 
         # 计算查询向量与所有文档向量的相似度
-        similarities = []
+        similarities: List[Dict[str, Any]] = []
         for i, doc_embedding in enumerate(self.embeddings):
             similarity = self._cosine_similarity(query_embedding, doc_embedding)
             similarities.append(
@@ -121,7 +121,7 @@ class InMemoryVectorStore(VectorStore):
             )
 
         # 按相似度排序并返回前top_k个结果
-        similarities.sort(key=lambda x: x["similarity"], reverse=True)
+        similarities.sort(key=lambda x: float(x["similarity"]), reverse=True)
         return similarities[:top_k]
 
     def _cosine_similarity(self, vec1: List[float], vec2: List[float]) -> float:
@@ -311,7 +311,7 @@ class SimpleVectorStore:
             raise ValueError("需要提供嵌入向量")
 
         self.storage.add_documents([doc], [embedding])
-        return doc["id"]
+        return str(doc["id"])
 
     def add_texts(
         self,
@@ -329,7 +329,7 @@ class SimpleVectorStore:
             raise ValueError("需要提供嵌入向量")
 
         self.storage.add_documents(documents, embeddings)
-        return [doc["id"] for doc in documents]
+        return [str(doc["id"]) for doc in documents]
 
     def search(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
         """搜索相似文档"""
