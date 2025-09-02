@@ -4,41 +4,75 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Python project focused on document loading and processing using LangChain. The project is designed to facilitate file reading and retrieval operations for document processing workflows.
+This is a Python project focused on document loading and processing with custom text splitting and search capabilities. The project supports reading various document formats (TXT, PDF, URLs) and provides advanced text processing features including multiple splitting strategies and search modes.
 
 ## Project Structure
 
-Currently, this is a minimal project with:
-- `README.md` - Project documentation (in Chinese)
-- `LICENSE` - MIT License
-- No Python source code files yet
-- No dependency management files present
+```
+Document-Loader/
+├── main.py                 # Main application entry point
+├── text_splitter.py        # Text splitting module with various strategies
+├── embeddings.py           # Vector embeddings and search functionality
+├── README.md              # Project documentation (in Chinese)
+├── LICENSE                # MIT License
+├── CLAUDE.md              # This file
+└── .venv/                 # Virtual environment (managed by uv)
+```
+
+### Core Modules
+
+#### `main.py` - Application Entry Point
+- Command-line interface using argparse
+- Document loading from TXT, PDF, and URL sources
+- Text splitting and search functionality
+- Import organization with clear separation of standard libraries, third-party packages, and custom modules
+
+#### `text_splitter.py` - Text Processing Module
+- **TextSplitter**: Base class for all text splitters
+- **CharacterTextSplitter**: Character-based splitting with separator support
+- **RecursiveCharacterTextSplitter**: Iterative splitting using multiple separators
+- **StreamingTextSplitter**: Memory-efficient streaming splitter for large files
+- **TokenTextSplitter**: Word/token-based splitting
+- **SemanticTextSplitter**: Sentence boundary-aware splitting
+- **create_text_splitter()**: Factory function for splitter creation
+
+#### `embeddings.py` - Search and Embedding Module
+- **SimpleEmbeddings**: Vector embedding generation and semantic search
+- **HybridSearch**: Combined keyword and semantic search
+- **simple_text_search()**: Basic keyword-based search functionality
 
 ## Development Setup
 
 This project uses **uv** as the package manager. To set up the development environment:
 
 1. Initialize the project with uv (if not already done):
+
    ```bash
    uv init
    ```
 
-2. Add LangChain and other dependencies:
+2. Add required dependencies:
+
    ```bash
-   uv add langchain
-   uv add langchain-community  # For document loaders
-   uv add langchain-core       # Core LangChain functionality
-   # Add other document processing dependencies as needed
+   # For PDF processing
+   uv add pymupdf
+   
+   # For embeddings and search (if needed)
+   uv add numpy
+   uv add scikit-learn
+   uv add sentence-transformers
    ```
 
 3. Activate the virtual environment:
+
    ```bash
    source .venv/bin/activate  # uv automatically creates and manages this
    ```
 
 4. Run the project:
+
    ```bash
-   uv run python main.py  # or whatever the main file is named
+   uv run python main.py document.txt
    ```
 
 ### Common uv Commands
@@ -50,20 +84,85 @@ This project uses **uv** as the package manager. To set up the development envir
 - `uv lock` - Update lockfile
 - `uv tree` - Show dependency tree
 
-## Intended Architecture
+## Usage Examples
 
-Based on the README description, this project will focus on:
-- Document loading capabilities using LangChain
-- File reading and processing
-- Document retrieval functionality
-- Support for various document formats
+### Basic Document Reading
 
-## Notes for Development
+```bash
+# Read text file
+uv run python main.py document.txt
 
-- This is a learning project for LangChain document processing
-- The README indicates the project is for educational purposes
-- Primary language appears to be Chinese based on the README
-- Uses **uv** as the package manager (modern Python package management)
-- No existing code patterns or conventions established yet
-- Will need to establish proper Python project structure as development progresses
-- uv automatically manages virtual environments in `.venv/` directory
+# Read PDF file
+uv run python main.py document.pdf
+
+# Read from URL
+uv run python main.py https://example.com
+```
+
+### Text Splitting
+
+```bash
+# Split text using recursive splitter
+uv run python main.py large_file.txt --split --chunk-size 500 --splitter recursive
+
+# Use different splitting strategies
+uv run python main.py document.txt --split --splitter semantic --chunk-size 300
+```
+
+### Search Functionality
+
+```bash
+# Keyword search
+uv run python main.py document.txt --search-mode keyword --search-query "Python programming"
+
+# Semantic search
+uv run python main.py document.txt --search-mode semantic --search-query "machine learning"
+
+# Hybrid search (keyword + semantic)
+uv run python main.py document.txt --search-mode hybrid --search-query "data algorithms"
+
+# Combined splitting and search
+uv run python main.py large_file.txt --split --search-mode semantic --search-query "artificial intelligence"
+```
+
+## Code Organization Guidelines
+
+### Import Organization
+
+Follow the established import structure in all Python files:
+
+```python
+# ===== 标准库导入 =====
+import sys
+import argparse
+from pathlib import Path
+
+# ===== 第三方库导入 =====
+try:
+    import fitz  # PyMuPDF for PDF reading
+except ImportError:
+    # Handle missing dependencies
+    pass
+
+# ===== 项目自定义模块导入 =====
+# Module descriptions
+from text_splitter import create_text_splitter
+from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
+```
+
+### Module Structure
+
+- Each module should have a clear, single responsibility
+- Use factory functions for creating complex objects
+- Provide comprehensive docstrings in Chinese (project's primary language)
+- Follow Python naming conventions (snake_case for functions, CamelCase for classes)
+- Type hints should be used for better code maintainability
+
+## Development Notes
+
+- This is a learning project focused on document processing and text analysis
+- Primary language for documentation and comments is Chinese
+- Uses **uv** as the package manager with automatic virtual environment management
+- Modular architecture allows for easy extension of new text splitting strategies
+- Custom implementation rather than LangChain dependencies for better control and learning
+- Code is structured to be educational while maintaining production-quality standards
