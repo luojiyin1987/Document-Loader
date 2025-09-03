@@ -28,6 +28,9 @@ except ImportError:
 # 向量嵌入和搜索功能
 from embeddings import HybridSearch, SimpleEmbeddings, simple_text_search
 
+# 搜索引擎功能
+from search_engine import create_bing_engine, create_search_engine_manager, create_serpapi_engine, format_search_results
+
 # 文本分割功能
 from text_splitter import create_text_splitter
 
@@ -116,7 +119,7 @@ def is_url(string):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Document Loader - 读取txt、pdf、网址内容并支持文本分割",
+        description="Document Loader - 读取txt、pdf、网址内容并支持文本分割和搜索引擎",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
@@ -128,17 +131,21 @@ def main():
     # 文本分割
     python main.py document.txt --split --chunk-size 500 --splitter recursive
 
-    # 搜索功能
+    # 本地搜索功能
     python main.py document.txt --search-mode keyword --search-query "Python 编程"
     python main.py document.txt --search-mode semantic --search-query "人工智能"
     python main.py document.txt --search-mode hybrid --search-query "数据 算法"
 
     # 分割+搜索组合
     python main.py large_file.txt --split --search-mode semantic --search-query "机器学习"
+
+    # 搜索引擎功能
+    python main.py --web-search "Python 编程教程"
+    python main.py --web-search "机器学习" --engine web --results 5
         """,
     )
 
-    parser.add_argument("source", help="文件路径或URL")
+    parser.add_argument("source", nargs="?", help="文件路径或URL（可选，用于搜索引擎模式）")
     parser.add_argument("--encoding", default="utf-8", help="文本文件编码 (默认: utf-8)")
     parser.add_argument("--split", action="store_true", help="启用文本分割")
     parser.add_argument("--chunk-size", type=int, default=1000, help="分割块大小 (默认: 1000)")
@@ -157,35 +164,86 @@ def main():
     parser.add_argument("--search-query", help="搜索查询内容")
     parser.add_argument("--top-k", type=int, default=5, help="搜索结果数量 (默认: 5)")
 
+    # 搜索引擎相关参数
+    parser.add_argument("--web-search", help="网络搜索查询内容")
+    parser.add_argument(
+        "--engine",
+        choices=["web", "duckduckgo"],
+        default="web",
+        help="搜索引擎类型 (默认: web)",
+    )
+    parser.add_argument("--results", type=int, default=10, help="网络搜索结果数量 (默认: 10)")
+    parser.add_argument("--bing-api-key", help="Bing搜索API密钥")
+    parser.add_argument("--serpapi-key", help="SerpApi密钥")
+
     args = parser.parse_args()
+
+    # 搜索引擎模式
+    if args.web_search:
+        print(f"正在使用 {args.engine} 搜索引擎进行网络搜索...")
+        print(f"搜索查询: {args.web_search}")
+        print(f"返回结果数量: {args.results}")
+        print("=" * 50)
+
+        try:
+            # 创建搜索引擎管理器
+            search_manager = create_search_engine_manager()
+
+            # 如果提供了API密钥，注册相应的搜索引擎
+            if args.bing_api_key:
+                bing_engine = create_bing_engine(args.bing_api_key)
+                search_manager.register_engine("bing", bing_engine)
+
+            if args.serpapi_key:
+                serpapi_engine = create_serpapi_engine(args.serpapi_key)
+                search_manager.register_engine("serpapi", serpapi_engine)
+
+            # 执行搜索
+            results = search_manager.search(args.web_search, args.engine, args.results)
+
+            # 显示搜索结果
+            formatted_results = format_search_results(results)
+            print(formatted_results)
+
+        except Exception as e:
+            print(f"搜索过程中发生错误: {e}")
+            print("这可能是因为网络连接问题或API限制")
+            return
 
     source = args.source
 
-    # 判断输入类型
-    if is_url(source):
-        print(f"正在读取URL: {source}")
-        print("=" * 50)
-        content = read_url(source)
-    else:
-        file_path = Path(source)
-        if not file_path.exists():
-            print(f"错误: 文件不存在: {source}")
-            sys.exit(1)
+    # 如果没有指定源文件且不是搜索引擎模式，显示帮助
+    if not source and not args.web_search:
+        parser.print_help()
+        return
 
-        file_extension = file_path.suffix.lower()
-
-        if file_extension == ".txt":
-            print(f"正在读取文本文件: {source}")
+    # 文档处理模式
+    if source:
+        # 判断输入类型
+        if is_url(source):
+            print(f"正在读取URL: {source}")
             print("=" * 50)
-            content = read_txt_file(source)
-        elif file_extension == ".pdf":
-            print(f"正在读取PDF文件: {source}")
-            print("=" * 50)
-            content = read_pdf_file(source)
+            content = read_url(source)
         else:
-            print(f"错误: 不支持的文件类型: {file_extension}")
-            print("支持的文件类型: .txt, .pdf")
-            sys.exit(1)
+            file_path = Path(source)
+            if not file_path.exists():
+                print(f"错误: 文件不存在: {source}")
+                sys.exit(1)
+
+            file_extension = file_path.suffix.lower()
+
+            if file_extension == ".txt":
+                print(f"正在读取文本文件: {source}")
+                print("=" * 50)
+                content = read_txt_file(source)
+            elif file_extension == ".pdf":
+                print(f"正在读取PDF文件: {source}")
+                print("=" * 50)
+                content = read_pdf_file(source)
+            else:
+                print(f"错误: 不支持的文件类型: {file_extension}")
+                print("支持的文件类型: .txt, .pdf")
+                sys.exit(1)
 
     # 如果启用搜索功能
     if args.search_mode and args.search_query:
@@ -228,9 +286,7 @@ def main():
                 results = simple_text_search(args.search_query, search_documents, args.top_k)
             elif args.search_mode == "semantic":
                 embedder = SimpleEmbeddings()
-                results = embedder.similarity_search(
-                    args.search_query, search_documents, args.top_k
-                )
+                results = embedder.similarity_search(args.search_query, search_documents, args.top_k)
             elif args.search_mode == "hybrid":
                 hybrid_search = HybridSearch()
                 results = hybrid_search.search(args.search_query, search_documents, args.top_k)
@@ -253,10 +309,7 @@ def main():
                         content_preview += "..."
                     print(f"内容: {content_preview}")
                 elif args.search_mode == "hybrid":
-                    print(
-                        f"结果 {i}: 综合分数={result['combined_score']:.3f} "
-                        f"(关键词={result['keyword_score']:.3f}, 语义={result['semantic_score']:.3f})"
-                    )
+                    print(f"结果 {i}: 综合分数={result['combined_score']:.3f} " f"(关键词={result['keyword_score']:.3f}, 语义={result['semantic_score']:.3f})")
                     content_preview = result["document"][:300]
                     if len(result["document"]) > 300:
                         content_preview += "..."
@@ -277,7 +330,7 @@ def main():
                 print()
 
     # 如果启用文本分割但不搜索
-    elif args.split:
+    elif args.split and source:
         print(f"正在使用 {args.splitter} 分割器分割文本...")
         print(f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}")
         print("=" * 50)
@@ -307,7 +360,7 @@ def main():
                 content_preview += "..."
             print(f"内容: {content_preview}")
             print("-" * 50)
-    else:
+    elif source:
         # 直接打印内容
         print(content)
 
