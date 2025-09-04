@@ -79,7 +79,9 @@ class RelevanceEvaluator:
         semantic_score = self._semantic_relevance(query, answer, context)
 
         # 综合分数
-        return keyword_score * self.keyword_weight + semantic_score * self.semantic_weight
+        return (
+            keyword_score * self.keyword_weight + semantic_score * self.semantic_weight
+        )
 
     def _keyword_relevance(self, query: str, answer: str) -> float:
         """计算关键词相关性"""
@@ -94,7 +96,9 @@ class RelevanceEvaluator:
         coverage = matched_words / len(query_words)
 
         # 计算词频权重
-        frequency_score = sum(answer_words.count(word) for word in query_words) / len(answer_words)
+        frequency_score = sum(answer_words.count(word) for word in query_words) / len(
+            answer_words
+        )
 
         return min(coverage * 0.7 + frequency_score * 0.3, 1.0)
 
@@ -106,7 +110,10 @@ class RelevanceEvaluator:
         score = 0.0
 
         # 检查是否直接回答了问题
-        if any(word in answer_lower for word in ["是", "不是", "有", "没有", "包括", "包含"]):
+        if any(
+            word in answer_lower
+            for word in ["是", "不是", "有", "没有", "包括", "包含"]
+        ):
             score += 0.3
 
         # 检查答案长度是否合理
@@ -114,7 +121,9 @@ class RelevanceEvaluator:
             score += 0.2
 
         # 检查是否包含解释性内容
-        if any(word in answer_lower for word in ["因为", "所以", "由于", "原因", "例如"]):
+        if any(
+            word in answer_lower for word in ["因为", "所以", "由于", "原因", "例如"]
+        ):
             score += 0.2
 
         # 检查上下文利用率
@@ -131,7 +140,9 @@ class RelevanceEvaluator:
 class AccuracyEvaluator:
     """准确性评估器"""
 
-    def evaluate_accuracy(self, answer: str, expected_answer: Optional[str] = None) -> float:
+    def evaluate_accuracy(
+        self, answer: str, expected_answer: Optional[str] = None
+    ) -> float:
         """评估答案准确性"""
         if not expected_answer:
             # 如果没有期望答案，基于答案质量评估
@@ -221,7 +232,10 @@ class CompletenessEvaluator:
         """分类查询类型"""
         query_lower = query.lower()
 
-        if any(word in query_lower for word in ["是什么", "什么是", "谁", "哪里", "什么时候"]):
+        if any(
+            word in query_lower
+            for word in ["是什么", "什么是", "谁", "哪里", "什么时候"]
+        ):
             return "factual"
         elif any(word in query_lower for word in ["如何", "怎么", "步骤", "方法"]):
             return "procedural"
@@ -421,7 +435,10 @@ class RetrievalQAEvaluator:
         self.source_diversity_evaluator = SourceDiversityEvaluator()
 
     def evaluate_query(
-        self, query: str, answer_result: AnswerResult, expected_answer: Optional[str] = None
+        self,
+        query: str,
+        answer_result: AnswerResult,
+        expected_answer: Optional[str] = None,
     ) -> QueryEvaluation:
         """评估单个查询"""
         # 提取上下文信息
@@ -445,7 +462,9 @@ class RetrievalQAEvaluator:
             context_docs, answer_result.answer
         )
 
-        source_diversity = self.source_diversity_evaluator.evaluate_source_diversity(context_docs)
+        source_diversity = self.source_diversity_evaluator.evaluate_source_diversity(
+            context_docs
+        )
 
         # 计算总体分数
         overall_score = (
@@ -475,7 +494,9 @@ class RetrievalQAEvaluator:
             },
         )
 
-    def evaluate_system(self, qa_system, test_queries: List[Dict[str, Any]]) -> SystemEvaluation:
+    def evaluate_system(
+        self, qa_system, test_queries: List[Dict[str, Any]]
+    ) -> SystemEvaluation:
         """评估整个系统"""
         query_evaluations = []
 
@@ -508,12 +529,22 @@ class RetrievalQAEvaluator:
         if not query_evaluations:
             raise ValueError("没有成功评估任何查询")
 
-        avg_relevance = statistics.mean([qe.relevance_score for qe in query_evaluations])
+        avg_relevance = statistics.mean(
+            [qe.relevance_score for qe in query_evaluations]
+        )
         avg_accuracy = statistics.mean([qe.accuracy_score for qe in query_evaluations])
-        avg_completeness = statistics.mean([qe.completeness_score for qe in query_evaluations])
-        avg_response_time = statistics.mean([qe.response_time for qe in query_evaluations])
-        avg_context_quality = statistics.mean([qe.context_quality for qe in query_evaluations])
-        avg_source_diversity = statistics.mean([qe.source_diversity for qe in query_evaluations])
+        avg_completeness = statistics.mean(
+            [qe.completeness_score for qe in query_evaluations]
+        )
+        avg_response_time = statistics.mean(
+            [qe.response_time for qe in query_evaluations]
+        )
+        avg_context_quality = statistics.mean(
+            [qe.context_quality for qe in query_evaluations]
+        )
+        avg_source_diversity = statistics.mean(
+            [qe.source_diversity for qe in query_evaluations]
+        )
         overall_score = statistics.mean([qe.overall_score for qe in query_evaluations])
 
         # 生成指标
@@ -536,7 +567,9 @@ class RetrievalQAEvaluator:
             recommendations=recommendations,
         )
 
-    def _generate_metrics(self, query_evaluations: List[QueryEvaluation]) -> List[EvaluationMetric]:
+    def _generate_metrics(
+        self, query_evaluations: List[QueryEvaluation]
+    ) -> List[EvaluationMetric]:
         """生成详细指标"""
         metrics = []
 
@@ -609,7 +642,9 @@ class RetrievalQAEvaluator:
         )
 
         # 质量分布
-        high_quality_count = sum(1 for qe in query_evaluations if qe.overall_score >= 0.8)
+        high_quality_count = sum(
+            1 for qe in query_evaluations if qe.overall_score >= 0.8
+        )
         metrics.append(
             EvaluationMetric(
                 "高质量答案比例",
@@ -621,17 +656,29 @@ class RetrievalQAEvaluator:
 
         return metrics
 
-    def _generate_recommendations(self, query_evaluations: List[QueryEvaluation]) -> List[str]:
+    def _generate_recommendations(
+        self, query_evaluations: List[QueryEvaluation]
+    ) -> List[str]:
         """生成优化建议"""
         recommendations = []
 
         # 分析各项指标
-        avg_relevance = statistics.mean([qe.relevance_score for qe in query_evaluations])
+        avg_relevance = statistics.mean(
+            [qe.relevance_score for qe in query_evaluations]
+        )
         avg_accuracy = statistics.mean([qe.accuracy_score for qe in query_evaluations])
-        avg_completeness = statistics.mean([qe.completeness_score for qe in query_evaluations])
-        avg_response_time = statistics.mean([qe.response_time for qe in query_evaluations])
-        avg_context_quality = statistics.mean([qe.context_quality for qe in query_evaluations])
-        avg_source_diversity = statistics.mean([qe.source_diversity for qe in query_evaluations])
+        avg_completeness = statistics.mean(
+            [qe.completeness_score for qe in query_evaluations]
+        )
+        avg_response_time = statistics.mean(
+            [qe.response_time for qe in query_evaluations]
+        )
+        avg_context_quality = statistics.mean(
+            [qe.context_quality for qe in query_evaluations]
+        )
+        avg_source_diversity = statistics.mean(
+            [qe.source_diversity for qe in query_evaluations]
+        )
 
         # 相关性建议
         if avg_relevance < 0.7:
@@ -774,7 +821,9 @@ def run_evaluation_demo():
 
         # 保存评估结果
         print("10. 保存评估结果...")
-        result_file = f"evaluation_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        result_file = (
+            f"evaluation_result_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
 
         # 转换为可序列化的格式
         evaluation_dict = {

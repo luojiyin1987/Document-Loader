@@ -49,7 +49,11 @@ class SimpleEmbeddings:
         words.extend(chinese_chars)
 
         # 过滤短词（只对英文单词）
-        words = [word for word in words if len(word) >= self.min_word_length or word.isalpha()]
+        words = [
+            word
+            for word in words
+            if len(word) >= self.min_word_length or word.isalpha()
+        ]
 
         return words
 
@@ -125,7 +129,9 @@ class SimpleEmbeddings:
         similarities: List[Dict[str, Any]] = []
         for i, doc_vec in enumerate(doc_vecs):
             sim = self.similarity(query_vec, doc_vec)
-            similarities.append({"index": i, "document": documents[i], "similarity": sim})
+            similarities.append(
+                {"index": i, "document": documents[i], "similarity": sim}
+            )
 
         # 按相似度排序
         similarities.sort(key=lambda x: float(x["similarity"]), reverse=True)
@@ -157,7 +163,9 @@ class HybridSearch:
 
         return intersection / union if union > 0 else 0.0
 
-    def search(self, query: str, documents: List[str], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, documents: List[str], top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         """混合搜索"""
         if not documents:
             return []
@@ -182,7 +190,8 @@ class HybridSearch:
 
             # 加权组合分数
             combined_score = (
-                self.keyword_weight * keyword_score + self.semantic_weight * semantic_score
+                self.keyword_weight * keyword_score
+                + self.semantic_weight * semantic_score
             )
 
             results.append(
@@ -201,7 +210,9 @@ class HybridSearch:
         return results[:top_k]
 
 
-def simple_text_search(query: str, documents: List[str], top_k: int = 5) -> List[Dict[str, Any]]:
+def simple_text_search(
+    query: str, documents: List[str], top_k: int = 5
+) -> List[Dict[str, Any]]:
     """
     简单文本搜索 - 基于关键词匹配
     不需要训练，适合快速搜索

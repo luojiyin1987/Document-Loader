@@ -4,7 +4,6 @@
 基于项目现有功能创建的智能代理
 """
 
-
 from typing import Any, List
 
 from agents import AgentTask, BaseAgent, ToolInterface
@@ -77,7 +76,9 @@ class DocumentProcessingTool(ToolInterface):
                 chunk_size = input_data.get("chunk_size", 1000)
                 chunk_overlap = input_data.get("chunk_overlap", 200)
 
-                splitter = create_text_splitter(splitter_type, chunk_size, chunk_overlap)
+                splitter = create_text_splitter(
+                    splitter_type, chunk_size, chunk_overlap
+                )
                 documents = splitter.create_documents(content, {"source": source})
 
                 return {
@@ -124,7 +125,10 @@ class TextSearchTool(ToolInterface):
         try:
             if isinstance(documents, list):
                 # 如果是文档列表
-                search_documents = [doc["page_content"] if isinstance(doc, dict) else doc for doc in documents]
+                search_documents = [
+                    doc["page_content"] if isinstance(doc, dict) else doc
+                    for doc in documents
+                ]
             else:
                 # 如果是单个文本
                 search_documents = [documents]
@@ -433,6 +437,8 @@ AGENT_CONFIGS = {
 def create_agent(agent_type: str, **kwargs) -> BaseAgent:
     """根据类型创建代理"""
     if agent_type not in AGENT_CONFIGS:
-        raise ValueError(f"不支持的代理类型: {agent_type}. 支持的类型: {list(AGENT_CONFIGS.keys())}")
+        raise ValueError(
+            f"不支持的代理类型: {agent_type}. 支持的类型: {list(AGENT_CONFIGS.keys())}"
+        )
 
     return AGENT_CONFIGS[agent_type](**kwargs)

@@ -124,7 +124,9 @@ class AgentInterface(ABC):
 class BaseAgent(AgentInterface):
     """基础代理实现"""
 
-    def __init__(self, name: str, description: str, tools: Optional[List[ToolInterface]] = None):
+    def __init__(
+        self, name: str, description: str, tools: Optional[List[ToolInterface]] = None
+    ):
         self._name = name
         self._description = description
         self.tools = tools or []
@@ -165,7 +167,10 @@ class BaseAgent(AgentInterface):
             "name": self.name,
             "description": self.description,
             "supported_tasks": self.supported_tasks,
-            "tools": [{"name": tool.name, "description": tool.description} for tool in self.tools],
+            "tools": [
+                {"name": tool.name, "description": tool.description}
+                for tool in self.tools
+            ],
             "status": self.status.value,
             "total_executions": len(self.execution_history),
         }
@@ -265,7 +270,9 @@ class AgentExecutor:
 
         print(f"代理 {selected_agent.name} 开始执行任务: {task.id}")
         result = await selected_agent.execute_task(task)
-        print(f"代理 {selected_agent.name} 完成任务: {task.id}, 状态: {result.status.value}")
+        print(
+            f"代理 {selected_agent.name} 完成任务: {task.id}, 状态: {result.status.value}"
+        )
 
         return result
 
@@ -325,12 +332,24 @@ class AgentExecutor:
     def get_statistics(self) -> Dict[str, Any]:
         """获取执行器统计信息"""
         total_tasks = len(self.completed_tasks)
-        successful_tasks = sum(1 for result in self.completed_tasks.values() if result.status == AgentStatus.COMPLETED)
-        failed_tasks = sum(1 for result in self.completed_tasks.values() if result.status == AgentStatus.ERROR)
+        successful_tasks = sum(
+            1
+            for result in self.completed_tasks.values()
+            if result.status == AgentStatus.COMPLETED
+        )
+        failed_tasks = sum(
+            1
+            for result in self.completed_tasks.values()
+            if result.status == AgentStatus.ERROR
+        )
 
         avg_execution_time = 0
         if successful_tasks > 0:
-            total_time = sum(result.execution_time for result in self.completed_tasks.values() if result.status == AgentStatus.COMPLETED)
+            total_time = sum(
+                result.execution_time
+                for result in self.completed_tasks.values()
+                if result.status == AgentStatus.COMPLETED
+            )
             avg_execution_time = total_time / successful_tasks
 
         return {

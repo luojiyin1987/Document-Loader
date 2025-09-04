@@ -243,7 +243,11 @@ def demo_advanced_usage():
 
     # 批量查询测试
     print("\n6. 批量查询测试...")
-    batch_questions = ["什么是监督学习？", "Python适合初学者吗？", "数据清洗的步骤有哪些？"]
+    batch_questions = [
+        "什么是监督学习？",
+        "Python适合初学者吗？",
+        "数据清洗的步骤有哪些？",
+    ]
 
     batch_results = manager.batch_query(batch_questions, top_k=2)
 
@@ -327,7 +331,11 @@ def demo_performance_comparison():
         {"system": "advanced", "retriever": "hybrid", "name": "高级混合检索"},
     ]
 
-    test_questions = ["Python的特点有哪些？", "什么是深度学习？", "数据科学的步骤是什么？"]
+    test_questions = [
+        "Python的特点有哪些？",
+        "什么是深度学习？",
+        "数据科学的步骤是什么？",
+    ]
 
     results_summary = []
 

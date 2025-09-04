@@ -32,7 +32,9 @@ def demo_vector_store_workflow():
     print("-" * 40)
 
     # 创建文本分割器
-    splitter = create_text_splitter(splitter_type="recursive", chunk_size=200, chunk_overlap=50)
+    splitter = create_text_splitter(
+        splitter_type="recursive", chunk_size=200, chunk_overlap=50
+    )
 
     # 分割文档
     chunks = splitter.create_documents(
@@ -75,7 +77,9 @@ def demo_vector_store_workflow():
             for i, result in enumerate(results, 1):
                 print(f"  结果 {i}: 相似度={result.get('similarity', 'N/A'):.3f}")
                 print(f"    内容: {result['document']['page_content'][:80]}...")
-                print(f"    来源: {result['document']['metadata'].get('source', 'Unknown')}")
+                print(
+                    f"    来源: {result['document']['metadata'].get('source', 'Unknown')}"
+                )
         else:
             print("  未找到相关结果")
 

@@ -64,7 +64,9 @@ class DocumentProcessor:
                     continue
 
                 # 创建文本分割器
-                splitter = create_text_splitter(splitter_type, chunk_size, chunk_overlap)
+                splitter = create_text_splitter(
+                    splitter_type, chunk_size, chunk_overlap
+                )
 
                 # 分割文档
                 metadata = {
@@ -155,7 +157,9 @@ class QASystemManager:
 
         try:
             if self.system_type == "advanced" and context_strategy:
-                result = self.qa_system.query(question, top_k, context_strategy=context_strategy)
+                result = self.qa_system.query(
+                    question, top_k, context_strategy=context_strategy
+                )
             else:
                 # 基础系统不支持context_strategy参数
                 result = self.qa_system.query(question, top_k)
@@ -260,7 +264,9 @@ class QASystemManager:
             if "retriever" in stats:
                 retriever_stats = stats["retriever"]
                 print(f"检索次数: {retriever_stats.get('retrieval_count', 0)}")
-                print(f"平均检索时间: {retriever_stats.get('avg_retrieval_time', 0):.3f}秒")
+                print(
+                    f"平均检索时间: {retriever_stats.get('avg_retrieval_time', 0):.3f}秒"
+                )
 
             if "total_queries" in stats:
                 print(f"总查询数: {stats['total_queries']}")
@@ -330,7 +336,9 @@ def main():
     )
 
     # 文档处理配置
-    parser.add_argument("--chunk-size", type=int, default=1000, help="文本分割块大小 (默认: 1000)")
+    parser.add_argument(
+        "--chunk-size", type=int, default=1000, help="文本分割块大小 (默认: 1000)"
+    )
     parser.add_argument(
         "--chunk-overlap", type=int, default=200, help="文本分割重叠大小 (默认: 200)"
     )
@@ -343,7 +351,10 @@ def main():
 
     # 上下文配置
     parser.add_argument(
-        "--context-tokens", type=int, default=2000, help="上下文最大token数 (默认: 2000)"
+        "--context-tokens",
+        type=int,
+        default=2000,
+        help="上下文最大token数 (默认: 2000)",
     )
     parser.add_argument(
         "--context-strategy",
@@ -367,7 +378,9 @@ def main():
         manager = QASystemManager(args.system)
 
         # 创建问答系统
-        manager.create_system(retriever_type=args.retriever, context_tokens=args.context_tokens)
+        manager.create_system(
+            retriever_type=args.retriever, context_tokens=args.context_tokens
+        )
 
         # 加载知识库
         manager.load_knowledge_base(

@@ -19,7 +19,12 @@ async def test_document_agent():
     print(f"代理描述: {agent.description}")
 
     # 创建任务
-    task = AgentTask(id="test_001", description="测试文档处理", input_data="README.md", metadata={"task_type": "document_processing", "action": "read"})
+    task = AgentTask(
+        id="test_001",
+        description="测试文档处理",
+        input_data="README.md",
+        metadata={"task_type": "document_processing", "action": "read"},
+    )
 
     print(f"任务ID: {task.id}")
     print(f"任务描述: {task.description}")

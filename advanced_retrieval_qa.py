@@ -62,7 +62,15 @@ class QueryAnalyzer:
 
     def __init__(self):
         self.query_patterns = {
-            "factual": [r"是什么", r"什么是", r"谁", r"哪里", r"什么时候", r"多少", r"几个"],
+            "factual": [
+                r"是什么",
+                r"什么是",
+                r"谁",
+                r"哪里",
+                r"什么时候",
+                r"多少",
+                r"几个",
+            ],
             "procedural": [r"如何", r"怎么", r"怎样", r"方法", r"步骤"],
             "reasoning": [r"为什么", r"原因", r"解释", r"分析", r"比较"],
             "comparative": [r"对比", r"比较", r"区别", r"差异"],
@@ -163,13 +171,30 @@ class QueryAnalyzer:
             factors += 0.2
 
         # 逻辑连接词
-        logical_connectors = ["并且", "或者", "但是", "然而", "虽然", "and", "or", "but", "however"]
+        logical_connectors = [
+            "并且",
+            "或者",
+            "但是",
+            "然而",
+            "虽然",
+            "and",
+            "or",
+            "but",
+            "however",
+        ]
         for connector in logical_connectors:
             if connector in query:
                 factors += 0.1
 
         # 比较和对比
-        comparative_words = ["对比", "比较", "区别", "compare", "contrast", "difference"]
+        comparative_words = [
+            "对比",
+            "比较",
+            "区别",
+            "compare",
+            "contrast",
+            "difference",
+        ]
         for word in comparative_words:
             if word in query:
                 factors += 0.2
@@ -178,7 +203,16 @@ class QueryAnalyzer:
 
     def _is_time_sensitive(self, query: str) -> bool:
         """判断是否时间敏感"""
-        time_words = ["最新", "最近", "当前", "现在", "latest", "recent", "current", "now"]
+        time_words = [
+            "最新",
+            "最近",
+            "当前",
+            "现在",
+            "latest",
+            "recent",
+            "current",
+            "now",
+        ]
         return any(word in query for word in time_words)
 
     def _requires_reasoning(self, query_type: str, query: str) -> bool:
@@ -243,19 +277,25 @@ class MultiStrategyRetriever(BaseRetriever):
             strategy=f"multi_strategy_({len(selected_strategies)}_strategies)",
         )
 
-    def _select_strategies(self, query_analysis: QueryAnalysis) -> List[RetrievalStrategy]:
+    def _select_strategies(
+        self, query_analysis: QueryAnalysis
+    ) -> List[RetrievalStrategy]:
         """根据查询分析选择检索策略"""
         selected = []
 
         # 基于查询类型选择策略
         if query_analysis.query_type == "factual":
             # 事实性查询优先使用向量检索
-            vector_strategies = [s for s in self.strategies if "vector" in s.name.lower()]
+            vector_strategies = [
+                s for s in self.strategies if "vector" in s.name.lower()
+            ]
             selected.extend(vector_strategies[:2])
 
         if query_analysis.query_type == "reasoning":
             # 推理性查询使用混合检索
-            hybrid_strategies = [s for s in self.strategies if "hybrid" in s.name.lower()]
+            hybrid_strategies = [
+                s for s in self.strategies if "hybrid" in s.name.lower()
+            ]
             selected.extend(hybrid_strategies[:2])
 
         # 如果没有特定策略，使用权重最高的策略
@@ -330,7 +370,9 @@ class MultiStrategyRetriever(BaseRetriever):
 
         return final_score
 
-    def _calculate_relevance(self, doc: RetrievedDocument, query_analysis: QueryAnalysis) -> float:
+    def _calculate_relevance(
+        self, doc: RetrievedDocument, query_analysis: QueryAnalysis
+    ) -> float:
         """计算查询-文档相关性"""
         score = 0.0
 
@@ -347,7 +389,9 @@ class MultiStrategyRetriever(BaseRetriever):
 
         return min(score, 1.0)
 
-    def add_documents(self, documents: List[Dict[str, Any]], embeddings: List[List[float]]) -> None:
+    def add_documents(
+        self, documents: List[Dict[str, Any]], embeddings: List[List[float]]
+    ) -> None:
         """添加文档到所有检索器"""
         for strategy in self.strategies:
             strategy.retriever.add_documents(documents, embeddings)
@@ -386,7 +430,9 @@ class AdvancedContextBuilder(ContextBuilder):
         }
         self.current_strategy = "relevant_first"
 
-    def build_context(self, query: str, retrieved_docs: List[RetrievedDocument]) -> Context:
+    def build_context(
+        self, query: str, retrieved_docs: List[RetrievedDocument]
+    ) -> Context:
         """构建上下文"""
         # 选择上下文构建策略
         strategy_func = self.context_strategies[self.current_strategy]
@@ -433,7 +479,9 @@ class AdvancedContextBuilder(ContextBuilder):
 
                 # 检查token限制
                 if (
-                    self._estimate_tokens(self._build_context_text(query, selected_docs))
+                    self._estimate_tokens(
+                        self._build_context_text(query, selected_docs)
+                    )
                     > self.max_tokens
                 ):
                     selected_docs.pop()
@@ -460,7 +508,9 @@ class AdvancedContextBuilder(ContextBuilder):
                 selected_docs.append(doc)
 
                 if (
-                    self._estimate_tokens(self._build_context_text(query, selected_docs))
+                    self._estimate_tokens(
+                        self._build_context_text(query, selected_docs)
+                    )
                     > self.max_tokens
                 ):
                     selected_docs.pop()
@@ -468,7 +518,9 @@ class AdvancedContextBuilder(ContextBuilder):
 
         return selected_docs
 
-    def _build_advanced_context_text(self, query: str, docs: List[RetrievedDocument]) -> str:
+    def _build_advanced_context_text(
+        self, query: str, docs: List[RetrievedDocument]
+    ) -> str:
         """构建高级上下文文本"""
         context_parts = [f"查询: {query}\n"]
         context_parts.append("相关文档:\n")
@@ -512,7 +564,9 @@ class AdvancedContextBuilder(ContextBuilder):
 
             # 来源多样性奖励
             diversity_bonus = 0.0
-            if hasattr(doc.metadata, "get") and doc.metadata.get("retrieval_strategies"):
+            if hasattr(doc.metadata, "get") and doc.metadata.get(
+                "retrieval_strategies"
+            ):
                 diversity_bonus = len(set(doc.metadata["retrieval_strategies"])) * 0.05
 
             scores.append(doc_score + length_bonus + diversity_bonus)
@@ -689,7 +743,9 @@ class AdvancedRetrievalQA:
             retrieval_result = self.retriever.retrieve(question, top_k)
 
             # 2. 构建上下文
-            context = self.context_builder.build_context(question, retrieval_result.documents)
+            context = self.context_builder.build_context(
+                question, retrieval_result.documents
+            )
 
             # 3. 生成答案
             answer_result = self.answer_generator.generate_answer(question, context)
@@ -733,7 +789,11 @@ class AdvancedRetrievalQA:
             query=question,
             answer=f"查询处理失败: {error_msg}",
             context=Context(
-                query=question, relevant_docs=[], context_text="", total_tokens=0, context_score=0.0
+                query=question,
+                relevant_docs=[],
+                context_text="",
+                total_tokens=0,
+                context_score=0.0,
             ),
             confidence=0.0,
             sources=[],
@@ -746,7 +806,8 @@ class AdvancedRetrievalQA:
         self.performance_metrics["total_queries"] += 1
         self.performance_metrics["total_time"] += time_taken
         self.performance_metrics["avg_time"] = (
-            self.performance_metrics["total_time"] / self.performance_metrics["total_queries"]
+            self.performance_metrics["total_time"]
+            / self.performance_metrics["total_queries"]
         )
 
         if is_error:
@@ -758,12 +819,14 @@ class AdvancedRetrievalQA:
             **self.performance_metrics,
             "cache_size": len(self.query_cache),
             "error_rate": (
-                self.performance_metrics["error_count"] / self.performance_metrics["total_queries"]
+                self.performance_metrics["error_count"]
+                / self.performance_metrics["total_queries"]
                 if self.performance_metrics["total_queries"] > 0
                 else 0.0
             ),
             "cache_hit_rate": (
-                self.performance_metrics["cache_hits"] / self.performance_metrics["total_queries"]
+                self.performance_metrics["cache_hits"]
+                / self.performance_metrics["total_queries"]
                 if self.performance_metrics["total_queries"] > 0
                 else 0.0
             ),
@@ -774,7 +837,9 @@ class AdvancedRetrievalQA:
         self.query_cache.clear()
 
     def add_documents(
-        self, documents: List[Dict[str, Any]], embeddings: Optional[List[List[float]]] = None
+        self,
+        documents: List[Dict[str, Any]],
+        embeddings: Optional[List[List[float]]] = None,
     ) -> None:
         """添加文档"""
         if embeddings is None:
@@ -785,7 +850,9 @@ class AdvancedRetrievalQA:
         # 清空缓存，因为知识库已更新
         self.clear_cache()
 
-    def _generate_embeddings(self, documents: List[Dict[str, Any]]) -> List[List[float]]:
+    def _generate_embeddings(
+        self, documents: List[Dict[str, Any]]
+    ) -> List[List[float]]:
         """生成文档嵌入向量"""
         # 获取embedder
         embedder = None
@@ -891,25 +958,45 @@ def test_advanced_retrieval_qa():
         {
             "page_content": "人工智能（AI）是计算机科学的一个分支，致力于创建能够执行通常需要人类智能的任务的系统。"
             "AI包括机器学习、深度学习、自然语言处理等多个子领域。",
-            "metadata": {"source": "ai_overview", "category": "ai", "difficulty": "medium"},
+            "metadata": {
+                "source": "ai_overview",
+                "category": "ai",
+                "difficulty": "medium",
+            },
         },
         {
             "page_content": "机器学习是AI的核心技术之一，它使计算机能够从数据中学习并改进性能。"
             "主要类型包括监督学习、无监督学习和强化学习。常见的算法有决策树、神经网络、支持向量机等。",
-            "metadata": {"source": "ml_guide", "category": "ai", "difficulty": "medium"},
+            "metadata": {
+                "source": "ml_guide",
+                "category": "ai",
+                "difficulty": "medium",
+            },
         },
         {
             "page_content": "深度学习是机器学习的一个子集，使用多层神经网络来学习数据的复杂模式。"
             "它在图像识别、语音识别、自然语言处理等领域取得了突破性进展。",
-            "metadata": {"source": "dl_introduction", "category": "ai", "difficulty": "hard"},
+            "metadata": {
+                "source": "dl_introduction",
+                "category": "ai",
+                "difficulty": "hard",
+            },
         },
         {
             "page_content": "自然语言处理（NLP）是AI的重要分支，专注于计算机与人类语言之间的交互。NLP技术包括机器翻译、情感分析、文本摘要、问答系统等应用。",
-            "metadata": {"source": "nlp_basics", "category": "nlp", "difficulty": "medium"},
+            "metadata": {
+                "source": "nlp_basics",
+                "category": "nlp",
+                "difficulty": "medium",
+            },
         },
         {
             "page_content": "计算机视觉是AI的另一个重要领域，致力于使计算机能够理解和解释视觉信息。应用包括人脸识别、物体检测、图像分割、自动驾驶等。",
-            "metadata": {"source": "cv_applications", "category": "cv", "difficulty": "hard"},
+            "metadata": {
+                "source": "cv_applications",
+                "category": "cv",
+                "difficulty": "hard",
+            },
         },
     ]
 
@@ -934,7 +1021,9 @@ def test_advanced_retrieval_qa():
         print("-" * 60)
 
         try:
-            result = qa_system.query(question, top_k=3, context_strategy="relevant_first")
+            result = qa_system.query(
+                question, top_k=3, context_strategy="relevant_first"
+            )
 
             print(f"答案: {result.answer}")
             print(f"置信度: {result.confidence:.3f}")

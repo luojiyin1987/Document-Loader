@@ -31,10 +31,20 @@ from agents import AgentExecutor, AgentTask
 # ===== 项目自定义模块导入 =====
 # 向量嵌入和搜索功能
 from embeddings import HybridSearch, SimpleEmbeddings, simple_text_search
-from example_agents import create_analysis_agent, create_document_agent, create_search_agent, create_web_search_agent
+from example_agents import (
+    create_analysis_agent,
+    create_document_agent,
+    create_search_agent,
+    create_web_search_agent,
+)
 
 # 搜索引擎功能
-from search_engine import create_bing_engine, create_search_engine_manager, create_serpapi_engine, format_search_results
+from search_engine import (
+    create_bing_engine,
+    create_search_engine_manager,
+    create_serpapi_engine,
+    format_search_results,
+)
 
 # 文本分割功能
 from text_splitter import create_text_splitter
@@ -131,7 +141,12 @@ def handle_agent_mode(args):
     executor = AgentExecutor()
 
     # 注册所有代理
-    agents = [create_document_agent(), create_search_agent(), create_web_search_agent(), create_analysis_agent()]
+    agents = [
+        create_document_agent(),
+        create_search_agent(),
+        create_web_search_agent(),
+        create_analysis_agent(),
+    ]
 
     for agent in agents:
         executor.register_agent(agent)
@@ -178,7 +193,12 @@ def handle_agent_mode(args):
                 print("错误: 文档处理模式需要指定 --agent-input")
                 return
 
-            task = AgentTask(id=task_id, description=args.agent_task, input_data=args.agent_input, metadata=metadata)
+            task = AgentTask(
+                id=task_id,
+                description=args.agent_task,
+                input_data=args.agent_input,
+                metadata=metadata,
+            )
 
         elif args.agent_mode == "search":
             if not args.agent_query:
@@ -209,20 +229,32 @@ def handle_agent_mode(args):
 
                 # 分割文档
                 splitter = create_text_splitter("recursive", 1000, 200)
-                doc_objects = splitter.create_documents(content, {"source": args.agent_input})
+                doc_objects = splitter.create_documents(
+                    content, {"source": args.agent_input}
+                )
                 documents = doc_objects
             else:
                 print("错误: 搜索模式需要指定 --agent-input 或文档内容")
                 return
 
-            task = AgentTask(id=task_id, description=args.agent_task, input_data={"query": args.agent_query, "documents": documents}, metadata=metadata)
+            task = AgentTask(
+                id=task_id,
+                description=args.agent_task,
+                input_data={"query": args.agent_query, "documents": documents},
+                metadata=metadata,
+            )
 
         elif args.agent_mode == "web":
             if not args.agent_input:
                 print("错误: 网络搜索模式需要指定 --agent-input")
                 return
 
-            task = AgentTask(id=task_id, description=args.agent_task, input_data=args.agent_input, metadata=metadata)
+            task = AgentTask(
+                id=task_id,
+                description=args.agent_task,
+                input_data=args.agent_input,
+                metadata=metadata,
+            )
 
         elif args.agent_mode == "analysis":
             if not args.agent_input:
@@ -230,7 +262,12 @@ def handle_agent_mode(args):
                 return
 
             metadata["analysis_type"] = "general"
-            task = AgentTask(id=task_id, description=args.agent_task, input_data=args.agent_input, metadata=metadata)
+            task = AgentTask(
+                id=task_id,
+                description=args.agent_task,
+                input_data=args.agent_input,
+                metadata=metadata,
+            )
 
         else:
             print(f"错误: 不支持的代理模式: {args.agent_mode}")
@@ -304,11 +341,19 @@ def main():
         """,
     )
 
-    parser.add_argument("source", nargs="?", help="文件路径或URL（可选，用于搜索引擎模式）")
-    parser.add_argument("--encoding", default="utf-8", help="文本文件编码 (默认: utf-8)")
+    parser.add_argument(
+        "source", nargs="?", help="文件路径或URL（可选，用于搜索引擎模式）"
+    )
+    parser.add_argument(
+        "--encoding", default="utf-8", help="文本文件编码 (默认: utf-8)"
+    )
     parser.add_argument("--split", action="store_true", help="启用文本分割")
-    parser.add_argument("--chunk-size", type=int, default=1000, help="分割块大小 (默认: 1000)")
-    parser.add_argument("--chunk-overlap", type=int, default=200, help="分割块重叠大小 (默认: 200)")
+    parser.add_argument(
+        "--chunk-size", type=int, default=1000, help="分割块大小 (默认: 1000)"
+    )
+    parser.add_argument(
+        "--chunk-overlap", type=int, default=200, help="分割块重叠大小 (默认: 200)"
+    )
     parser.add_argument(
         "--splitter",
         choices=["character", "recursive", "streaming", "token", "semantic"],
@@ -331,20 +376,28 @@ def main():
         default="web",
         help="搜索引擎类型 (默认: web)",
     )
-    parser.add_argument("--results", type=int, default=10, help="网络搜索结果数量 (默认: 10)")
+    parser.add_argument(
+        "--results", type=int, default=10, help="网络搜索结果数量 (默认: 10)"
+    )
     parser.add_argument("--bing-api-key", help="Bing搜索API密钥")
     parser.add_argument("--serpapi-key", help="SerpApi密钥")
 
     # 智能代理系统相关参数
     parser.add_argument(
-        "--agent-mode", choices=["document", "search", "web", "analysis"], help="智能代理模式: document(文档处理), search(文本搜索), web(网络搜索), analysis(综合分析)"
+        "--agent-mode",
+        choices=["document", "search", "web", "analysis"],
+        help="智能代理模式: document(文档处理), search(文本搜索), web(网络搜索), analysis(综合分析)",
     )
     parser.add_argument("--agent-task", help="代理任务描述")
     parser.add_argument("--agent-input", help="代理任务输入数据")
     parser.add_argument("--agent-query", help="搜索代理的查询内容")
-    parser.add_argument("--agent-priority", type=int, default=1, help="代理任务优先级 (默认: 1)")
+    parser.add_argument(
+        "--agent-priority", type=int, default=1, help="代理任务优先级 (默认: 1)"
+    )
     parser.add_argument("--list-agents", action="store_true", help="列出所有可用的代理")
-    parser.add_argument("--agent-stats", action="store_true", help="显示代理执行统计信息")
+    parser.add_argument(
+        "--agent-stats", action="store_true", help="显示代理执行统计信息"
+    )
 
     args = parser.parse_args()
 
@@ -434,7 +487,9 @@ def main():
             print(f"正在使用 {args.splitter} 分割器预处理文本...")
 
             # 创建分割器
-            splitter = create_text_splitter(args.splitter, args.chunk_size, args.chunk_overlap)
+            splitter = create_text_splitter(
+                args.splitter, args.chunk_size, args.chunk_overlap
+            )
 
             # 分割文档
             documents = splitter.create_documents(
@@ -457,13 +512,19 @@ def main():
         # 执行搜索
         try:
             if args.search_mode == "keyword":
-                results = simple_text_search(args.search_query, search_documents, args.top_k)
+                results = simple_text_search(
+                    args.search_query, search_documents, args.top_k
+                )
             elif args.search_mode == "semantic":
                 embedder = SimpleEmbeddings()
-                results = embedder.similarity_search(args.search_query, search_documents, args.top_k)
+                results = embedder.similarity_search(
+                    args.search_query, search_documents, args.top_k
+                )
             elif args.search_mode == "hybrid":
                 hybrid_search = HybridSearch()
-                results = hybrid_search.search(args.search_query, search_documents, args.top_k)
+                results = hybrid_search.search(
+                    args.search_query, search_documents, args.top_k
+                )
 
             # 显示搜索结果
             print(f"\n找到 {len(results)} 个相关结果:")
@@ -483,7 +544,10 @@ def main():
                         content_preview += "..."
                     print(f"内容: {content_preview}")
                 elif args.search_mode == "hybrid":
-                    print(f"结果 {i}: 综合分数={result['combined_score']:.3f} " f"(关键词={result['keyword_score']:.3f}, 语义={result['semantic_score']:.3f})")
+                    print(
+                        f"结果 {i}: 综合分数={result['combined_score']:.3f} "
+                        f"(关键词={result['keyword_score']:.3f}, 语义={result['semantic_score']:.3f})"
+                    )
                     content_preview = result["document"][:300]
                     if len(result["document"]) > 300:
                         content_preview += "..."
@@ -494,7 +558,9 @@ def main():
             print(f"搜索时出错: {e}")
             # 降级到关键词搜索
             print("降级到关键词搜索...")
-            results = simple_text_search(args.search_query, search_documents, args.top_k)
+            results = simple_text_search(
+                args.search_query, search_documents, args.top_k
+            )
             for i, result in enumerate(results, 1):
                 print(f"结果 {i}: 分数={result['score']:.3f}")
                 content_preview = result["document"][:300]
@@ -506,11 +572,15 @@ def main():
     # 如果启用文本分割但不搜索
     elif args.split and source:
         print(f"正在使用 {args.splitter} 分割器分割文本...")
-        print(f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}")
+        print(
+            f"分割参数: chunk_size={args.chunk_size}, chunk_overlap={args.chunk_overlap}"
+        )
         print("=" * 50)
 
         # 创建分割器
-        splitter = create_text_splitter(args.splitter, args.chunk_size, args.chunk_overlap)
+        splitter = create_text_splitter(
+            args.splitter, args.chunk_size, args.chunk_overlap
+        )
 
         # 创建文档对象
         metadata = {

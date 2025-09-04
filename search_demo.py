@@ -50,7 +50,9 @@ def demo_search_strategies():
         embedder = SimpleEmbeddings()
         semantic_results = embedder.similarity_search(query, documents, top_k=3)
         for result in semantic_results:
-            print(f"   相似度: {result['similarity']:.3f} - {result['document'][:50]}...")
+            print(
+                f"   相似度: {result['similarity']:.3f} - {result['document'][:50]}..."
+            )
 
         # 3. 混合搜索
         print("\n3. 混合搜索:")

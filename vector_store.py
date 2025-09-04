@@ -25,7 +25,9 @@ class VectorStore(ABC):
     """向量存储抽象基类"""
 
     @abstractmethod
-    def add_documents(self, documents: List[Dict[str, Any]], embeddings: List[List[float]]) -> None:
+    def add_documents(
+        self, documents: List[Dict[str, Any]], embeddings: List[List[float]]
+    ) -> None:
         """添加文档和向量到存储"""
         pass
 
@@ -64,14 +66,18 @@ class InMemoryVectorStore(VectorStore):
         self.metadata_index: Dict[str, List[Dict[str, Any]]] = {}
         self.created_at = datetime.now()
 
-    def add_documents(self, documents: List[Dict[str, Any]], embeddings: List[List[float]]) -> None:
+    def add_documents(
+        self, documents: List[Dict[str, Any]], embeddings: List[List[float]]
+    ) -> None:
         """添加文档和向量到存储"""
         if len(documents) != len(embeddings):
             raise ValueError("文档数量和嵌入向量数量不匹配")
 
         for doc, embedding in zip(documents, embeddings):
             # 生成文档ID
-            doc_id = doc.get("id", f"doc_{len(self.documents)}_{hash(doc['page_content'])}")
+            doc_id = doc.get(
+                "id", f"doc_{len(self.documents)}_{hash(doc['page_content'])}"
+            )
             doc["id"] = doc_id
             doc["stored_at"] = datetime.now().isoformat()
 
@@ -331,7 +337,9 @@ class SimpleVectorStore:
         self.storage.add_documents(documents, embeddings)
         return [str(doc["id"]) for doc in documents]
 
-    def search(self, query_embedding: List[float], top_k: int = 5) -> List[Dict[str, Any]]:
+    def search(
+        self, query_embedding: List[float], top_k: int = 5
+    ) -> List[Dict[str, Any]]:
         """搜索相似文档"""
         results = self.storage.similarity_search(query_embedding, top_k)
         return [
@@ -349,7 +357,8 @@ class SimpleVectorStore:
         """根据元数据过滤"""
         results = self.storage.search_by_metadata(filter_dict, top_k)
         return [
-            {"document": result["document"], "id": result["document"]["id"]} for result in results
+            {"document": result["document"], "id": result["document"]["id"]}
+            for result in results
         ]
 
     def get_document_by_id(self, doc_id: str) -> Optional[Dict[str, Any]]:

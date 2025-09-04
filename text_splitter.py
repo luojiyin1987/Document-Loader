@@ -44,7 +44,9 @@ class TextSplitter:
 class CharacterTextSplitter(TextSplitter):
     """按字符数分割文本"""
 
-    def __init__(self, chunk_size: int = 1000, chunk_overlap: int = 200, separator: str = ""):
+    def __init__(
+        self, chunk_size: int = 1000, chunk_overlap: int = 200, separator: str = ""
+    ):
         super().__init__(chunk_size, chunk_overlap)
         self.separator = separator
 
@@ -315,8 +317,10 @@ class SemanticTextSplitter(TextSplitter):
             current += char
 
             # 检查是否是句子结束符
-            if char in self.chinese_sentence_endings or char in self.english_sentence_endings:
-
+            if (
+                char in self.chinese_sentence_endings
+                or char in self.english_sentence_endings
+            ):
                 # 检查是否有引号
                 if i + 1 < len(text) and text[i + 1] in ['"', '"', """, """]:
                     current += text[i + 1]

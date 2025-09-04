@@ -66,7 +66,9 @@ class WebSearchEngine(SearchEngineBase):
                     if isinstance(topic, dict) and topic.get("Text"):
                         results.append(
                             {
-                                "title": topic.get("FirstURL", "").split("/")[-1].replace("_", " "),
+                                "title": topic.get("FirstURL", "")
+                                .split("/")[-1]
+                                .replace("_", " "),
                                 "snippet": topic.get("Text", ""),
                                 "url": topic.get("FirstURL", ""),
                                 "source": "DuckDuckGo",
@@ -272,7 +274,9 @@ class SearchEngineManager:
         else:
             print(f"搜索引擎 {name} 不存在")
 
-    def search(self, query: str, engine: Optional[str] = None, num_results: int = 10) -> List[Dict[str, Any]]:
+    def search(
+        self, query: str, engine: Optional[str] = None, num_results: int = 10
+    ) -> List[Dict[str, Any]]:
         """使用指定搜索引擎进行搜索"""
         engine_name = engine or self.default_engine
 
@@ -292,14 +296,18 @@ class SearchEngineManager:
         """列出所有可用的搜索引擎"""
         return list(self.engines.keys())
 
-    def multi_search(self, query: str, engines: List[str], num_results: int = 5) -> Dict[str, List[Dict[str, Any]]]:
+    def multi_search(
+        self, query: str, engines: List[str], num_results: int = 5
+    ) -> Dict[str, List[Dict[str, Any]]]:
         """多引擎搜索"""
         results = {}
 
         for engine_name in engines:
             if engine_name in self.engines:
                 try:
-                    engine_results = self.engines[engine_name].search(query, num_results)
+                    engine_results = self.engines[engine_name].search(
+                        query, num_results
+                    )
                     results[engine_name] = engine_results
                 except Exception as e:
                     print(f"搜索引擎 {engine_name} 搜索失败: {e}")
@@ -331,7 +339,9 @@ def create_serpapi_engine(api_key: str) -> SerpApiSearchEngine:
     return SerpApiSearchEngine(api_key)
 
 
-def format_search_results(results: List[Dict[str, Any]], show_snippet: bool = True) -> str:
+def format_search_results(
+    results: List[Dict[str, Any]], show_snippet: bool = True
+) -> str:
     """格式化搜索结果"""
     if not results:
         return "没有找到搜索结果"
