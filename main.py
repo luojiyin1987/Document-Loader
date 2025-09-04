@@ -10,6 +10,7 @@ Document Loader - 支持从终端参数选择读取 txt、pdf、网址并打印�
 
 # ===== 标准库导入 =====
 import argparse
+import json
 import sys
 from pathlib import Path
 from urllib.error import URLError
@@ -24,9 +25,13 @@ except ImportError:
     print("请运行: uv add pymupdf")
     sys.exit(1)
 
+# Agents 智能代理系统
+from agents import AgentExecutor, AgentTask
+
 # ===== 项目自定义模块导入 =====
 # 向量嵌入和搜索功能
 from embeddings import HybridSearch, SimpleEmbeddings, simple_text_search
+from example_agents import create_analysis_agent, create_document_agent, create_search_agent, create_web_search_agent
 
 # 搜索引擎功能
 from search_engine import create_bing_engine, create_search_engine_manager, create_serpapi_engine, format_search_results
@@ -117,9 +122,157 @@ def is_url(string):
         return False
 
 
+def handle_agent_mode(args):
+    """处理智能代理模式"""
+    import asyncio
+    import uuid
+
+    # 创建代理执行器
+    executor = AgentExecutor()
+
+    # 注册所有代理
+    agents = [create_document_agent(), create_search_agent(), create_web_search_agent(), create_analysis_agent()]
+
+    for agent in agents:
+        executor.register_agent(agent)
+
+    # 列出所有代理
+    if args.list_agents:
+        print("=== 可用的智能代理 ===")
+        for agent_info in executor.list_agents():
+            print(f"名称: {agent_info['name']}")
+            print(f"描述: {agent_info['description']}")
+            print(f"支持的任务: {', '.join(agent_info['supported_tasks'])}")
+            print(f"工具: {[tool['name'] for tool in agent_info['tools']]}")
+            print(f"状态: {agent_info['status']}")
+            print("-" * 50)
+        return
+
+    # 显示统计信息
+    if args.agent_stats:
+        stats = executor.get_statistics()
+        print("=== 代理执行统计 ===")
+        print(f"总代理数: {stats['total_agents']}")
+        print(f"待处理任务: {stats['pending_tasks']}")
+        print(f"运行中任务: {stats['running_tasks']}")
+        print(f"总任务数: {stats['total_tasks']}")
+        print(f"成功任务: {stats['successful_tasks']}")
+        print(f"失败任务: {stats['failed_tasks']}")
+        print(f"成功率: {stats['success_rate']:.2%}")
+        print(f"平均执行时间: {stats['average_execution_time']:.2f}秒")
+        return
+
+    # 执行代理任务
+    if args.agent_mode and args.agent_task:
+        print(f"=== 智能代理模式: {args.agent_mode} ===")
+        print(f"任务: {args.agent_task}")
+        print("=" * 50)
+
+        # 创建任务
+        task_id = str(uuid.uuid4())
+        metadata = {"task_type": args.agent_mode, "priority": args.agent_priority}
+
+        # 根据代理类型设置不同的参数
+        if args.agent_mode == "document":
+            if not args.agent_input:
+                print("错误: 文档处理模式需要指定 --agent-input")
+                return
+
+            task = AgentTask(id=task_id, description=args.agent_task, input_data=args.agent_input, metadata=metadata)
+
+        elif args.agent_mode == "search":
+            if not args.agent_query:
+                print("错误: 搜索模式需要指定 --agent-query")
+                return
+
+            # 先获取文档内容
+            documents = []
+            if args.agent_input:
+                # 从文件或URL获取文档
+                if is_url(args.agent_input):
+                    content = read_url(args.agent_input)
+                else:
+                    file_path = Path(args.agent_input)
+                    if file_path.exists():
+                        if file_path.suffix.lower() == ".txt":
+                            content = read_txt_file(args.agent_input)
+                        elif file_path.suffix.lower() == ".pdf":
+                            content = read_pdf_file(args.agent_input)
+                        elif file_path.suffix.lower() == ".md":
+                            content = read_txt_file(args.agent_input)
+                        else:
+                            print(f"错误: 不支持的文件类型: {args.agent_input}")
+                            return
+                    else:
+                        print(f"错误: 文件不存在: {args.agent_input}")
+                        return
+
+                # 分割文档
+                splitter = create_text_splitter("recursive", 1000, 200)
+                doc_objects = splitter.create_documents(content, {"source": args.agent_input})
+                documents = doc_objects
+            else:
+                print("错误: 搜索模式需要指定 --agent-input 或文档内容")
+                return
+
+            task = AgentTask(id=task_id, description=args.agent_task, input_data={"query": args.agent_query, "documents": documents}, metadata=metadata)
+
+        elif args.agent_mode == "web":
+            if not args.agent_input:
+                print("错误: 网络搜索模式需要指定 --agent-input")
+                return
+
+            task = AgentTask(id=task_id, description=args.agent_task, input_data=args.agent_input, metadata=metadata)
+
+        elif args.agent_mode == "analysis":
+            if not args.agent_input:
+                print("错误: 综合分析模式需要指定 --agent-input")
+                return
+
+            metadata["analysis_type"] = "general"
+            task = AgentTask(id=task_id, description=args.agent_task, input_data=args.agent_input, metadata=metadata)
+
+        else:
+            print(f"错误: 不支持的代理模式: {args.agent_mode}")
+            return
+
+        # 提交并执行任务
+        executor.submit_task(task)
+
+        # 运行所有任务
+        print("正在执行代理任务...")
+        results = asyncio.run(executor.run_all_tasks())
+
+        # 显示结果
+        if results:
+            result = results[0]  # 只有一个任务
+            print("\n=== 任务执行结果 ===")
+            print("\n任务ID: {result.task_id}")
+            print("\n状态: {result.status.value}")
+            print("\n执行时间: {result.execution_time:.2f}秒")
+            print("\n代理信息: {result.agent_info}")
+
+            if result.error:
+                print("\n错误: {result.error}")
+            else:
+                print("\n输出:")
+                print("-" * 30)
+                if isinstance(result.output, dict):
+                    print(json.dumps(result.output, ensure_ascii=False, indent=2))
+                else:
+                    print(result.output)
+        else:
+            print("没有执行结果")
+
+        return
+
+    print("错误: 请指定代理模式任务参数")
+    print("使用 --help 查看帮助信息")
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="Document Loader - 读取txt、pdf、网址内容并支持文本分割和搜索引擎",
+        description="Document Loader - 文档处理、搜索和智能代理系统",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 使用示例:
@@ -142,6 +295,12 @@ def main():
     # 搜索引擎功能
     python main.py --web-search "Python 编程教程"
     python main.py --web-search "机器学习" --engine web --results 5
+
+    # 智能代理系统
+    python main.py --agent-mode document --agent-task "处理文档" --agent-input "document.txt"
+    python main.py --agent-mode search --agent-task "搜索内容" --agent-query "Python 编程"
+    python main.py --agent-mode web --agent-task "网络搜索" --agent-input "人工智能发展"
+    python main.py --agent-mode analysis --agent-task "综合分析" --agent-input "研究主题"
         """,
     )
 
@@ -176,6 +335,17 @@ def main():
     parser.add_argument("--bing-api-key", help="Bing搜索API密钥")
     parser.add_argument("--serpapi-key", help="SerpApi密钥")
 
+    # 智能代理系统相关参数
+    parser.add_argument(
+        "--agent-mode", choices=["document", "search", "web", "analysis"], help="智能代理模式: document(文档处理), search(文本搜索), web(网络搜索), analysis(综合分析)"
+    )
+    parser.add_argument("--agent-task", help="代理任务描述")
+    parser.add_argument("--agent-input", help="代理任务输入数据")
+    parser.add_argument("--agent-query", help="搜索代理的查询内容")
+    parser.add_argument("--agent-priority", type=int, default=1, help="代理任务优先级 (默认: 1)")
+    parser.add_argument("--list-agents", action="store_true", help="列出所有可用的代理")
+    parser.add_argument("--agent-stats", action="store_true", help="显示代理执行统计信息")
+
     args = parser.parse_args()
 
     # 搜索引擎模式
@@ -209,6 +379,10 @@ def main():
             print(f"搜索过程中发生错误: {e}")
             print("这可能是因为网络连接问题或API限制")
             return
+
+    # 智能代理模式
+    if args.agent_mode or args.list_agents or args.agent_stats:
+        return handle_agent_mode(args)
 
     source = args.source
 
