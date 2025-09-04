@@ -216,7 +216,7 @@ class HybridRetriever(BaseRetriever):
             # 找到对应的文档
             content = result["document"]
             for score_info in doc_scores.values():
-                if score_info["doc"].page_content == content:
+                if score_info["doc"].content == content:
                     score_info["keyword_score"] = result["combined_score"]
                     break
 
