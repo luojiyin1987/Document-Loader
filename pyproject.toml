@@ -11,4 +11,5 @@ dependencies = [
     "pre-commit>=4.3.0",
     "pymupdf>=1.26.4",
     "pypdf>=6.0.0",
+    "ruff>=0.12.11",
 ]
