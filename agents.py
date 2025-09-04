@@ -183,7 +183,11 @@ class BaseAgent(AgentInterface):
             execution_time = time.time() - start_time
 
             agent_result = AgentResult(
-                task_id=task.id, status=self._status, output=result, execution_time=execution_time, agent_info={"name": self.name, "description": self.description}
+                task_id=task.id,
+                status=self._status,
+                output=result,
+                execution_time=execution_time,
+                agent_info={"name": self.name, "description": self.description},
             )
 
         except Exception as e:
@@ -191,7 +195,11 @@ class BaseAgent(AgentInterface):
             execution_time = time.time() - start_time
 
             agent_result = AgentResult(
-                task_id=task.id, status=self._status, error=str(e), execution_time=execution_time, agent_info={"name": self.name, "description": self.description}
+                task_id=task.id,
+                status=self._status,
+                error=str(e),
+                execution_time=execution_time,
+                agent_info={"name": self.name, "description": self.description},
             )
 
         self.execution_history.append(agent_result)
@@ -249,7 +257,11 @@ class AgentExecutor:
         # 选择合适的代理
         selected_agent = self._select_agent_for_task(task)
         if not selected_agent:
-            return AgentResult(task_id=task.id, status=AgentStatus.ERROR, error="没有找到合适的代理来处理此任务")
+            return AgentResult(
+                task_id=task.id,
+                status=AgentStatus.ERROR,
+                error="没有找到合适的代理来处理此任务",
+            )
 
         print(f"代理 {selected_agent.name} 开始执行任务: {task.id}")
         result = await selected_agent.execute_task(task)

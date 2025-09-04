@@ -139,9 +139,7 @@ class VectorStoreRetriever(BaseRetriever):
 
     def get_stats(self) -> Dict[str, Any]:
         """获取检索器统计信息"""
-        avg_retrieval_time = (
-            self.total_retrieval_time / self.retrieval_count if self.retrieval_count > 0 else 0.0
-        )
+        avg_retrieval_time = self.total_retrieval_time / self.retrieval_count if self.retrieval_count > 0 else 0.0
 
         return {
             "retrieval_count": self.retrieval_count,
@@ -198,9 +196,7 @@ class HybridRetriever(BaseRetriever):
             strategy="hybrid",
         )
 
-    def _merge_results(
-        self, vector_results: RetrievalResult, keyword_results: List[Dict], top_k: int
-    ) -> List[RetrievedDocument]:
+    def _merge_results(self, vector_results: RetrievalResult, keyword_results: List[Dict], top_k: int) -> List[RetrievedDocument]:
         """合并向量搜索和关键词搜索结果"""
 
         # 创建文档分数映射
@@ -240,9 +236,7 @@ class HybridRetriever(BaseRetriever):
                 score_info["doc"].metadata["score"] = combined_score
 
         # 按综合分数排序
-        sorted_docs = sorted(
-            doc_scores.values(), key=lambda x: float(x["combined_score"]), reverse=True
-        )
+        sorted_docs = sorted(doc_scores.values(), key=lambda x: float(x["combined_score"]), reverse=True)
 
         return [item["doc"] for item in sorted_docs[:top_k]]
 
@@ -254,11 +248,7 @@ class HybridRetriever(BaseRetriever):
         """获取统计信息"""
         return {
             "retrieval_count": self.retrieval_count,
-            "avg_retrieval_time": (
-                self.total_retrieval_time / self.retrieval_count
-                if self.retrieval_count > 0
-                else 0.0
-            ),
+            "avg_retrieval_time": (self.total_retrieval_time / self.retrieval_count if self.retrieval_count > 0 else 0.0),
             "total_retrieval_time": self.total_retrieval_time,
             "vector_weight": self.vector_weight,
             "keyword_weight": self.keyword_weight,
@@ -424,9 +414,7 @@ class TemplateAnswerGenerator(BaseAnswerGenerator):
         query_lower = query.lower()
 
         # 事实性查询
-        if any(
-            word in query_lower for word in ["是什么", "什么是", "谁", "哪里", "什么时候", "多少"]
-        ):
+        if any(word in query_lower for word in ["是什么", "什么是", "谁", "哪里", "什么时候", "多少"]):
             return "factual"
 
         # 总结性查询
@@ -557,9 +545,7 @@ class RetrievalQA:
 
     def get_stats(self) -> Dict[str, Any]:
         """获取系统统计信息"""
-        avg_answer_time = (
-            self.total_answer_time / self.total_queries if self.total_queries > 0 else 0.0
-        )
+        avg_answer_time = self.total_answer_time / self.total_queries if self.total_queries > 0 else 0.0
 
         return {
             "total_queries": self.total_queries,
@@ -637,8 +623,7 @@ def test_retrieval_qa():
     # 准备测试文档
     test_documents = [
         {
-            "page_content": "Python是一种高级编程语言，由Guido van Rossum于1991年创建。"
-            "Python以其简洁的语法和强大的功能而闻名，广泛应用于Web开发、数据分析、人工智能等领域。",
+            "page_content": "Python是一种高级编程语言，由Guido van Rossum于1991年创建。" "Python以其简洁的语法和强大的功能而闻名，广泛应用于Web开发、数据分析、人工智能等领域。",
             "metadata": {
                 "source": "python_doc",
                 "category": "programming",

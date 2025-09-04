@@ -10,99 +10,135 @@ This is a Python project focused on document loading and processing with custom 
 
 ```text
 Document-Loader/
-├── main.py                 # Main application entry point
-├── text_splitter.py        # Text splitting module with various strategies
-├── embeddings.py           # Vector embeddings and search functionality
-├── README.md              # Project documentation (in Chinese)
-├── LICENSE                # MIT License
-├── CLAUDE.md              # This file
-└── .venv/                 # Virtual environment (managed by uv)
+├── main.py                    # Main application entry point with CLI
+├── text_splitter.py           # Text splitting module with 5 strategies
+├── embeddings.py              # Vector embeddings and search functionality
+├── search_engine.py           # Web search engine integration
+├── vector_store.py            # Vector storage and retrieval
+├── retrieval_qa.py            # Retrieval QA system
+├── advanced_retrieval_qa.py   # Advanced retrieval implementations
+├── README.md                  # Project documentation (in Chinese)
+├── LICENSE                    # MIT License
+├── CLAUDE.md                  # This file
+├── PRECOMMIT.md               # Pre-commit configuration
+├── pyproject.toml             # Project dependencies and configuration
+├── .pre-commit-config.yaml    # Pre-commit hooks configuration
+└── .venv/                     # Virtual environment (managed by uv)
 ```
 
 ### Core Modules
 
 #### `main.py` - Application Entry Point
 
-- Command-line interface using argparse
-- Document loading from TXT, PDF, and URL sources
-- Text splitting and search functionality
-- Import organization with clear separation of standard libraries, third-party packages, and custom modules
+- **Command-line interface**: Comprehensive argparse implementation with multiple modes
+- **Document loading**: TXT, PDF, and URL sources with encoding detection
+- **Text processing**: Integration with all text splitting strategies
+- **Search functionality**: Keyword, semantic, and hybrid search modes
+- **Web search**: Integration with multiple search engines (DuckDuckGo, Bing, SerpApi)
+- **Import organization**: Clear separation of 标准库, 第三方库, and 项目自定义模块
 
 #### `text_splitter.py` - Text Processing Module
 
-- **TextSplitter**: Base class for all text splitters
-- **CharacterTextSplitter**: Character-based splitting with separator support
-- **RecursiveCharacterTextSplitter**: Iterative splitting using multiple separators
-- **StreamingTextSplitter**: Memory-efficient streaming splitter for large files
-- **TokenTextSplitter**: Word/token-based splitting
-- **SemanticTextSplitter**: Sentence boundary-aware splitting
-- **create_text_splitter()**: Factory function for splitter creation
+- **TextSplitter**: Base class with common chunking logic
+- **CharacterTextSplitter**: Character-based splitting with configurable separators
+- **RecursiveCharacterTextSplitter**: Iterative splitting using hierarchical separators (paragraphs → sentences → words → spaces)
+- **StreamingTextSplitter**: Memory-efficient generator-based splitter for large files
+- **TokenTextSplitter**: Word/token-based splitting using regex tokenization
+- **SemanticTextSplitter**: Sentence boundary-aware splitting for Chinese and English
+- **create_text_splitter()**: Factory function for dynamic splitter creation
 
 #### `embeddings.py` - Search and Embedding Module
 
-- **SimpleEmbeddings**: Vector embedding generation and semantic search
-- **HybridSearch**: Combined keyword and semantic search
-- **simple_text_search()**: Basic keyword-based search functionality
+- **SimpleEmbeddings**: TF-IDF based vector embeddings with cosine similarity
+- **HybridSearch**: Combined keyword matching and semantic similarity with configurable weights
+- **simple_text_search()**: Fast keyword-based search without training requirements
+- **Language support**: Chinese character handling and English word tokenization
+- **No external dependencies**: Pure Python implementation for learning purposes
 
 ## Development Setup
 
 This project uses **uv** as the package manager and **pre-commit** for code quality assurance. To set up the development environment:
 
-1. Initialize the project with uv (if not already done):
+## Setup Commands
 
-   ```bash
-   uv init
-   ```
+```bash
+# Initialize project (if not already done)
+uv init
 
-2. Add required dependencies:
+# Install dependencies from pyproject.toml
+uv sync
 
-   ```bash
-   # For PDF processing
-   uv add pymupdf
+# Activate virtual environment
+source .venv/bin/activate  # uv automatically creates and manages this
 
-   # For embeddings and search (if needed)
-   uv add numpy
-   uv add scikit-learn
-   uv add sentence-transformers
-   ```
+# Install and set up pre-commit hooks
+uv add pre-commit
+pre-commit install
 
-3. Activate the virtual environment:
+# Run the application
+uv run python main.py document.txt
+```
 
-   ```bash
-   source .venv/bin/activate  # uv automatically creates and manages this
-   ```
+## Common Commands
 
-4. Install and set up pre-commit:
+### Development
 
-   ```bash
-   # Install pre-commit
-   uv add pre-commit
+```bash
+# Run any command with uv
+uv run python main.py --help
 
-   # Install git hooks
-   pre-commit install
-   ```
+# Add new dependencies
+uv add <package-name>
 
-5. Run the project:
+# Remove dependencies
+uv remove <package-name>
 
-   ```bash
-   uv run python main.py document.txt
-   ```
+# Update lockfile
+uv lock
 
-### Common uv Commands
+# Show dependency tree
+uv tree
+```
 
-- `uv add <package>` - Add a new dependency
-- `uv remove <package>` - Remove a dependency
-- `uv sync` - Sync dependencies
-- `uv run <command>` - Run a command in the virtual environment
-- `uv lock` - Update lockfile
-- `uv tree` - Show dependency tree
+### Code Quality
 
-### Pre-commit Commands
+```bash
+# Run pre-commit on staged files
+pre-commit run
 
-- `pre-commit run` - Run checks on staged files
-- `pre-commit run --all-files` - Run checks on all files
-- `pre-commit autoupdate` - Update hook versions
-- `pre-commit install` - Install git hooks
+# Run pre-commit on all files
+pre-commit run --all-files
+
+# Update pre-commit hook versions
+pre-commit autoupdate
+
+# Install git hooks (if not already installed)
+pre-commit install
+```
+
+### Pre-commit Configuration
+
+The project uses comprehensive pre-commit hooks configured in `.pre-commit-config.yaml`:
+
+- **Code formatting**: Black (line-length: 180) and isort
+- **Code quality**: Flake8 (line-length: 180, ignore E203)
+- **Security**: Bandit for security scanning
+- **File checks**: YAML, JSON, AST, merge conflicts, large files
+- **Best practices**: Debug statements, private key detection
+
+### Web Search Commands
+
+```bash
+# Basic web search
+uv run python main.py --web-search "Python programming"
+
+# Search with specific engine and results count
+uv run python main.py --web-search "machine learning" --engine web --results 5
+
+# Use API-based search engines (requires API keys)
+uv run python main.py --web-search "AI research" --engine bing --bing-api-key YOUR_KEY
+uv run python main.py --web-search "data science" --engine serpapi --serpapi-key YOUR_KEY
+```
 
 ## Usage Examples
 
@@ -145,56 +181,73 @@ uv run python main.py document.txt --search-mode hybrid --search-query "data alg
 uv run python main.py large_file.txt --split --search-mode semantic --search-query "artificial intelligence"
 ```
 
-## Code Organization Guidelines
+## Architecture Overview
 
-### Import Organization
+### Design Patterns
 
-Follow the established import structure in all Python files:
+- **Factory Pattern**: `create_text_splitter()` for dynamic splitter creation
+- **Strategy Pattern**: Different text splitting strategies with common interface
+- **Template Method**: Base classes with common functionality and specialized implementations
+- **Generator Pattern**: StreamingTextSplitter for memory-efficient processing
+
+### Import Organization Standard
+
+All Python files follow this import structure:
 
 ```python
 # ===== 标准库导入 =====
-import sys
 import argparse
+import sys
 from pathlib import Path
 
 # ===== 第三方库导入 =====
 try:
     import fitz  # PyMuPDF for PDF reading
 except ImportError:
-    # Handle missing dependencies
+    # Handle missing dependencies gracefully
     pass
 
 # ===== 项目自定义模块导入 =====
-# Module descriptions
+# Module descriptions grouped by functionality
 from text_splitter import create_text_splitter
 from embeddings import SimpleEmbeddings, HybridSearch, simple_text_search
 ```
 
-### Module Structure
+### Module Design Principles
 
-- Each module should have a clear, single responsibility
-- Use factory functions for creating complex objects
-- Provide comprehensive docstrings in Chinese (project's primary language)
-- Follow Python naming conventions (snake_case for functions, CamelCase for classes)
-- Type hints should be used for better code maintainability
-
-### Pre-commit Integration
-
-All code changes must pass pre-commit checks before committing. The configured hooks ensure:
-
-- Code formatting consistency (black, isort)
-- Code quality standards (flake8, mypy)
-- Security best practices (bandit, safety)
-- Documentation completeness (interrogate)
-- File formatting standards (YAML, Markdown)
+- **Single Responsibility**: Each module has one clear purpose
+- **Open/Closed**: Extensible through factory functions and base classes
+- **Dependency Management**: Graceful handling of missing optional dependencies
+- **Type Safety**: Comprehensive type hints throughout the codebase
+- **Documentation**: Chinese docstrings with clear usage examples
+- **Error Handling**: Robust error handling with fallback mechanisms
 
 ## Development Notes
 
-- This is a learning project focused on document processing and text analysis
-- Primary language for documentation and comments is Chinese
-- Uses **uv** as the package manager with automatic virtual environment management
-- Modular architecture allows for easy extension of new text splitting strategies
-- Custom implementation rather than LangChain dependencies for better control and learning
-- Code is structured to be educational while maintaining production-quality standards
-- Pre-commit hooks ensure consistent code quality and formatting across the project
-- See `PRECOMMIT.md` for detailed pre-commit configuration and usage instructions
+### Project Context
+
+- **Learning Focus**: Educational project for understanding document processing and text analysis
+- **Language**: Primary documentation and comments in Chinese
+- **Package Manager**: Uses **uv** with automatic virtual environment management
+- **Dependencies**: Minimal external dependencies; custom implementations for learning
+
+### Architecture Decisions
+
+- **Custom vs External**: Built custom text splitting and embedding implementations instead of using LangChain for better understanding
+- **Modular Design**: Each splitting strategy is implemented separately for clarity and extensibility
+- **Performance**: Memory-efficient streaming processing for large documents
+- **Language Support**: Comprehensive Chinese and English text processing capabilities
+
+### Quality Assurance
+
+- **Pre-commit Integration**: Automated code quality checks before every commit
+- **Testing**: Includes test files for core functionality (e.g., `test_search_engine.py`)
+- **Type Safety**: Full type hint coverage for better maintainability
+- **Error Handling**: Graceful degradation and fallback mechanisms throughout
+
+### Key Technical Details
+
+- **Text Encoding**: Multiple encoding support (UTF-8, GBK, Latin-1) for robust file reading
+- **URL Validation**: Secure URL handling with scheme validation and timeout protection
+- **Memory Management**: Generator-based processing for large file handling
+- **Search Flexibility**: Multiple search modes with configurable parameters
