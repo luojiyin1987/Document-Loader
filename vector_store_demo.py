@@ -43,7 +43,7 @@ def demo_vector_store_workflow():
 
     print(f"文档已分割为 {len(chunks)} 个块")
     for i, chunk in enumerate(chunks[:3]):  # 只显示前3个块
-        print(f"块 {i+1}: {chunk['page_content'][:100]}...")
+        print(f"块 {i + 1}: {chunk['page_content'][:100]}...")
 
     print("\n2. 添加到向量存储")
     print("-" * 40)
